@@ -1,3 +1,15 @@
+# ============================================================
+# マイクローゼット - Flaskアプリ本体
+#
+# ファイル内の構成(上から順に):
+#   1. 初期設定(Flask / DB / ログイン管理の準備)
+#   2. 定数(カテゴリ・季節・都市名マップ・色パレットなど)
+#   3. モデル定義(User / Clothes / ClothesImage / Coordinate)
+#   4. DBマイグレーション処理
+#   5. ヘルパー関数(ルートから呼び出す共通処理)
+#   6. ルート(認証 → クローゼット → コーディネート → AI・画像解析 → 天気)
+# ============================================================
+
 import base64
 import io
 import json
@@ -18,7 +30,8 @@ from sqlalchemy import text
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 
-load_dotenv()
+# ---- 1. 初期設定 ----
+load_dotenv()  # .envファイルの中身を環境変数として読み込む
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///fashion.db'
@@ -28,14 +41,15 @@ app.secret_key = os.getenv('SECRET_KEY')
 if not app.secret_key:
     raise RuntimeError('SECRET_KEY is not set. Please define it in the .env file.')
 
-csrf = CSRFProtect(app)
+csrf = CSRFProtect(app)  # 全POSTフォームにCSRFトークンを必須にする
 
-db = SQLAlchemy(app)
+db = SQLAlchemy(app)  # モデル定義・DB操作の窓口
 
 login_manager = LoginManager(app)
-login_manager.login_view = 'login'
+login_manager.login_view = 'login'  # 未ログインで@login_requiredのページに来たら/loginへ飛ばす
 login_manager.login_message = 'ログインしてください'
 
+# ---- 2. 定数 ----
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 CATEGORIES = ['トップス', 'ボトムス', 'アウター', 'シューズ', 'アクセサリー']
 SEASONS = ['春', '夏', '秋', '冬', 'オールシーズン']
@@ -91,6 +105,9 @@ COMPATIBLE_COLOR_PAIRS = {
     frozenset({'ピンク', 'グレー'}),
 }
 
+# ---- 3. モデル定義 ----
+# Coordinate(コーディネート)とClothes(服)は「多対多」の関係なので、
+# 中間テーブル(どのコーデにどの服が入っているかの対応表)が別途必要になる。
 coordinate_items = db.Table(
     'coordinate_items',
     db.Column('coordinate_id', db.Integer, db.ForeignKey('coordinate.id'), primary_key=True),
@@ -101,7 +118,7 @@ coordinate_items = db.Table(
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
-    password_hash = db.Column(db.String(255), nullable=False)
+    password_hash = db.Column(db.String(255), nullable=False)  # パスワードは平文で保存せず、ハッシュ化した値だけ持つ
     city = db.Column(db.String(100))
 
     def set_password(self, password):
@@ -113,11 +130,13 @@ class User(db.Model, UserMixin):
 
 @login_manager.user_loader
 def load_user(user_id):
+    # ログイン中かどうかをFlask-Loginが確認するたびに呼ばれ、current_userに詰める中身を返す
     return db.session.get(User, int(user_id))
 
 
 class Clothes(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    # user_idはNULL許容にしている(認証機能を後付けした際、持ち主未定のまま残るデータがあるため)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     name = db.Column(db.String(100), nullable=False)
     category = db.Column(db.String(50))
@@ -144,6 +163,9 @@ class Coordinate(db.Model):
     items = db.relationship('Clothes', secondary=coordinate_items, backref='coordinates')
 
 
+# ---- 4. DBマイグレーション ----
+# db.create_all()は「まだ無いテーブル」しか作らないので、既存のDBファイルに
+# 新しいカラムを追加したときは、ここで手動でALTER TABLEして追いつかせる。
 def run_migrations():
     with db.engine.connect() as conn:
         existing_cols = {row[1] for row in conn.execute(text('PRAGMA table_info(clothes)'))}
@@ -172,9 +194,12 @@ def run_migrations():
 
 
 with app.app_context():
-    db.create_all()
-    run_migrations()
+    db.create_all()  # まだ無いテーブルだけ新規作成(既存テーブルには触らない)
+    run_migrations()  # 既存テーブルへのカラム追加はこちらの担当
 
+
+# ---- 5. ヘルパー関数 ----
+# ここから下はルート(@app.route)から呼び出される共通処理。
 
 def allowed_file(filename):
     ext = filename.rsplit('.', 1)[-1].lower() if '.' in filename else ''
@@ -182,18 +207,21 @@ def allowed_file(filename):
 
 
 def save_clothes_image(image, clothes_id):
+    """アップロード画像を検証し、安全なファイル名で保存してClothesImageを返す(未選択/不正な形式ならNone)。"""
     if not image or image.filename == '':
         return None
     filename = secure_filename(image.filename)
     if not filename or not allowed_file(filename):
         return None
     ext = filename.rsplit('.', 1)[1].lower()
+    # 元のファイル名は使わずUUIDで生成し直す(同名ファイルによる上書き・パストラバーサル対策)
     unique_name = f'{uuid.uuid4().hex}.{ext}'
     image.save(os.path.join(app.config['UPLOAD_FOLDER'], unique_name))
     return ClothesImage(clothes_id=clothes_id, image_path=f'uploads/{unique_name}')
 
 
 def detect_dominant_color(image_bytes):
+    """画像の中央付近から支配的な色を抽出し、COLOR_PALETTEの中で一番近い色名を返す(無料の色自動判定)。"""
     try:
         img = Image.open(io.BytesIO(image_bytes)).convert('RGB')
     except Exception:
@@ -224,6 +252,7 @@ def detect_dominant_color(image_bytes):
 
 
 def resolve_city_name(city):
+    """「福岡」のような漢字の都市名をOpenWeatherMapが認識できる英語名に変換する(JAPAN_CITY_NAME_MAP参照)。"""
     city = city.strip()
     if city in JAPAN_CITY_NAME_MAP:
         return JAPAN_CITY_NAME_MAP[city]
@@ -234,6 +263,7 @@ def resolve_city_name(city):
 
 
 def fetch_weather(city):
+    """OpenWeatherMapから気温・天気概況を取得する。失敗時は例外を投げずNone/エラーメッセージを返す。"""
     api_key = os.getenv('OPENWEATHER_API_KEY')
     resolved_city = resolve_city_name(city)
     url = f'http://api.openweathermap.org/data/2.5/weather?q={resolved_city}&appid={api_key}&units=metric&lang=ja'
@@ -260,6 +290,7 @@ def parse_price(raw):
 
 
 def suitable_seasons_for_temp(temp):
+    """今日の気温から「今日にぴったり」バッジを出す季節を判定する。オールシーズンは常に対象。"""
     if temp is None:
         return set()
     if temp >= 25:
@@ -270,6 +301,7 @@ def suitable_seasons_for_temp(temp):
 
 
 def is_color_compatible(color1, color2):
+    """2色の組み合わせが良さそうか判定する。白・黒などの無彩色は何とでも合う扱いにする簡易ルール。"""
     if not color1 or not color2:
         return True
     c1, c2 = color1.strip(), color2.strip()
@@ -281,6 +313,7 @@ def is_color_compatible(color1, color2):
 
 
 def get_anthropic_client():
+    """ANTHROPIC_API_KEYが未設定ならNoneを返す(呼び出し側はNoneならAI機能を無効表示にする)。"""
     api_key = os.getenv('ANTHROPIC_API_KEY')
     if not api_key:
         return None
@@ -288,6 +321,8 @@ def get_anthropic_client():
     return Anthropic(api_key=api_key)
 
 
+# 「そのIDのデータは存在するが、他人の持ち物だった」場合も404にする。
+# (403 Forbiddenにすると「他人のデータがそこに存在する」ことがバレてしまうため、あえて404で統一)
 def owned_clothes_or_404(id):
     clothes = Clothes.query.get_or_404(id)
     if clothes.user_id != current_user.id:
@@ -301,6 +336,8 @@ def owned_coordinate_or_404(id):
         abort(404)
     return coordinate
 
+
+# ---- 6-1. ルート: 認証(登録・ログイン・ログアウト) ----
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -360,6 +397,8 @@ def logout():
     logout_user()
     return redirect(url_for('login'))
 
+
+# ---- 6-2. ルート: クローゼット(服の一覧・登録・編集・削除・お気に入り・着用) ----
 
 @app.route('/')
 @login_required
@@ -521,6 +560,7 @@ def toggle_favorite(id):
 @login_required
 def wear(id):
     clothes = owned_clothes_or_404(id)
+    # last_worn_atが今日の日付ならすでに記録済み=1日1回の制限として何もしない
     if clothes.last_worn_at != date.today():
         clothes.wear_count = (clothes.wear_count or 0) + 1
         clothes.last_worn_at = date.today()
@@ -532,12 +572,15 @@ def wear(id):
 @login_required
 def unwear(id):
     clothes = owned_clothes_or_404(id)
+    # 今日つけた記録だけ取り消せる(昨日以前の記録はここでは戻せない)
     if clothes.last_worn_at == date.today() and clothes.wear_count > 0:
         clothes.wear_count -= 1
         clothes.last_worn_at = None
         db.session.commit()
     return redirect(request.referrer or url_for('index'))
 
+
+# ---- 6-3. ルート: コーディネート(組み合わせの保存・一覧・詳細・削除) ----
 
 @app.route('/coordinates')
 @login_required
@@ -594,6 +637,9 @@ def delete_coordinate(id):
     db.session.commit()
     return redirect(url_for('coordinates'))
 
+
+# ---- 6-4. ルート: AI・画像解析 ----
+# detect_colorは常時無料で使える。analyze_image / suggestはANTHROPIC_API_KEY設定時のみ有効。
 
 @app.route('/detect_color', methods=['POST'])
 @login_required
@@ -706,6 +752,8 @@ def suggest():
     )
 
 
+# ---- 6-5. ルート: 天気 ----
+
 @app.route('/weather')
 @login_required
 def weather():
@@ -714,6 +762,8 @@ def weather():
     return render_template('weather.html', temp=temp, description=description, city=city)
 
 
+# ---- エントリーポイント ----
+# `python app.py`で直接実行したときだけここが動く(gunicorn/WSGI経由の本番実行では通らない)。
 if __name__ == '__main__':
     debug_mode = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
     app.run(debug=debug_mode)
