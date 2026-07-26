@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block title %}新規登録{% endblock %}
+{% block content %}
+<div class="form-container" style="max-width:380px;">
+    <h1>新規登録</h1>
+    {% if error %}
+    <div class="color-warning">{{ error }}</div>
+    {% endif %}
+    <form method="POST" class="validate-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="form-group">
+            <label>招待コード</label>
+            <input type="text" name="invite_code" required>
+            <span class="field-error">招待コードを入力してください</span>
+        </div>
+        <div class="form-group">
+            <label>ユーザー名</label>
+            <input type="text" name="username" required>
+            <span class="field-error">ユーザー名を入力してください</span>
+        </div>
+        <div class="form-group">
+            <label>パスワード</label>
+            <input type="password" name="password" required minlength="4">
+            <span class="field-error">4文字以上のパスワードを入力してください</span>
+        </div>
+        <button type="submit" class="submit-btn">登録する</button>
+    </form>
+    <a href="/login" class="back-link">すでにアカウントをお持ちの方はこちら</a>
+</div>
+{% endblock %}

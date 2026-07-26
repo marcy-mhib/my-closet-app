@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block title %}AIコーデ提案{% endblock %}
+{% block content %}
+<div class="form-container" style="max-width:600px;">
+    <h1>今日のAIコーデ提案</h1>
+    <p class="weather-desc" style="margin-bottom:16px;">{{ city }}：{% if temp is not none %}{{ temp }}℃ / {% endif %}{{ description }}</p>
+    {% if error %}
+    <div class="empty-state">{{ error }}</div>
+    {% else %}
+    <div class="suggestion-box">{{ suggestion }}</div>
+    {% endif %}
+    <a href="/" class="back-link">← 戻る</a>
+</div>
+{% endblock %}

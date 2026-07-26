@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block title %}{{ coordinate.name }}{% endblock %}
+{% block content %}
+<div class="form-container" style="max-width:700px;">
+    <h1>{{ coordinate.name }}</h1>
+    <div class="coordinate-items">
+        {% for item in coordinate.items %}
+        <div class="coordinate-item-row">
+            <span class="tag">{{ item.category }}</span>
+            <span>{{ item.name }}</span>
+            <span class="tag">{{ item.color }}</span>
+        </div>
+        {% else %}
+        <div class="empty-state">アイテムが設定されていません。</div>
+        {% endfor %}
+    </div>
+    {% if warnings %}
+    <div class="color-warning">
+        ⚠️ 色の相性が気になる組み合わせがあります：
+        {% for a, b in warnings %}
+        {{ a.name }}（{{ a.color }}） × {{ b.name }}（{{ b.color }}）{% if not loop.last %}, {% endif %}
+        {% endfor %}
+    </div>
+    {% elif coordinate.items|length > 1 %}
+    <div class="color-ok">✅ 色の相性は良さそうです</div>
+    {% endif %}
+    <form method="POST" action="{{ url_for('delete_coordinate', id=coordinate.id) }}" class="inline-form" onsubmit="return confirmDelete(this, 'このコーディネートを削除しますか？')">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="delete-btn-full">削除する</button>
+    </form>
+    <a href="/coordinates" class="back-link">← 戻る</a>
+</div>
+{% endblock %}

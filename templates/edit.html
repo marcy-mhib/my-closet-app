@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+{% block title %}服を編集{% endblock %}
+{% block content %}
+<div class="form-container">
+    <h1>服を編集する</h1>
+    <form method="POST" enctype="multipart/form-data" class="validate-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="form-group">
+            <label>服の名前</label>
+            <input type="text" name="name" value="{{ clothes.name }}" required>
+            <span class="field-error">服の名前を入力してください</span>
+        </div>
+        <div class="form-group">
+            <label>カテゴリ</label>
+            <select name="category">
+                {% for cat in categories %}
+                <option {% if clothes.category == cat %}selected{% endif %}>{{ cat }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <label>色</label>
+            <input type="text" name="color" id="color-input" value="{{ clothes.color }}">
+        </div>
+        <div class="form-group">
+            <label>季節</label>
+            <select name="season" id="season-select">
+                {% for s in seasons %}
+                <option {% if clothes.season == s %}selected{% endif %}>{{ s }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <label>購入価格（円・任意）</label>
+            <input type="number" name="price" min="0" step="1" placeholder="例：3000" value="{{ clothes.price if clothes.price is not none else '' }}">
+        </div>
+        <div class="form-group">
+            <label>登録済みの画像</label>
+            <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
+                {% for img in clothes.images %}
+                <div style="position:relative;">
+                    <img src="{{ url_for('static', filename=img.image_path) }}" width="70" style="border-radius:6px; object-fit:cover; height:70px;">
+                    <form method="POST" action="{{ url_for('delete_image', id=img.id) }}" class="inline-form" onsubmit="return confirmDelete(this, 'この画像を削除しますか？')" style="position:absolute; top:-6px; right:-6px;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="image-delete-btn">×</button>
+                    </form>
+                </div>
+                {% endfor %}
+            </div>
+            <label>画像を追加（複数選択可）</label>
+            <input type="file" name="images" id="images-input" accept="image/*" multiple>
+            <div id="image-preview" class="image-preview"></div>
+            {% if ai_enabled %}
+            <button type="button" id="ai-analyze-btn" class="ai-btn">🤖 AIで自動判定</button>
+            <span id="ai-status" class="ai-status"></span>
+            {% endif %}
+        </div>
+        <button type="submit" class="submit-btn">保存する</button>
+    </form>
+    <a href="/" class="back-link">← 戻る</a>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+document.getElementById('images-input').addEventListener('change', function (e) {
+    const preview = document.getElementById('image-preview');
+    preview.innerHTML = '';
+    Array.from(e.target.files).forEach(function (file) {
+        const reader = new FileReader();
+        reader.onload = function (ev) {
+            const img = document.createElement('img');
+            img.src = ev.target.result;
+            preview.appendChild(img);
+        };
+        reader.readAsDataURL(file);
+    });
+});
+
+{% if ai_enabled %}
+document.getElementById('ai-analyze-btn').addEventListener('click', function () {
+    const files = document.getElementById('images-input').files;
+    const status = document.getElementById('ai-status');
+    if (!files.length) {
+        status.textContent = '先に画像を選択してください';
+        return;
+    }
+    status.textContent = '判定中...';
+    const formData = new FormData();
+    formData.append('image', files[0]);
+    formData.append('csrf_token', '{{ csrf_token() }}');
+    fetch('/analyze_image', { method: 'POST', body: formData })
+        .then(function (res) { return res.json(); })
+        .then(function (data) {
+            if (data.error) {
+                status.textContent = data.error;
+                return;
+            }
+            const categorySelect = document.querySelector('select[name="category"]');
+            const seasonSelect = document.getElementById('season-select');
+            const colorInput = document.getElementById('color-input');
+            if (data.category) categorySelect.value = data.category;
+            if (data.season) seasonSelect.value = data.season;
+            if (data.color) colorInput.value = data.color;
+            status.textContent = '判定結果を反映しました';
+        })
+        .catch(function () {
+            status.textContent = 'AI解析に失敗しました';
+        });
+});
+{% endif %}
+</script>
+{% endblock %}

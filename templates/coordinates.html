@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block title %}コーディネート一覧{% endblock %}
+{% block content %}
+<div class="form-container" style="max-width:700px;">
+    <div class="section-header" style="padding:0 0 16px; border-bottom:none;">
+        <h1 style="font-size:18px; font-weight:500; margin:0;">コーディネート一覧</h1>
+        <a href="/coordinates/new" class="add-btn">＋ コーデを作成</a>
+    </div>
+    {% if coordinates %}
+    <div class="coordinate-list">
+        {% for c in coordinates %}
+        <div class="coordinate-card">
+            <a href="/coordinates/{{ c.id }}" class="coordinate-name">{{ c.name }}</a>
+            <div class="coordinate-tags">
+                {% for item in c.items %}
+                <span class="tag">{{ item.name }}</span>
+                {% else %}
+                <span class="tag">アイテム未設定</span>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">まだコーディネートが登録されていません。</div>
+    {% endif %}
+    <a href="/" class="back-link">← 戻る</a>
+</div>
+{% endblock %}

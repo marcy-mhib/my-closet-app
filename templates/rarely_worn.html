@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block title %}最近着ていない服{% endblock %}
+{% block content %}
+<div class="form-container" style="max-width:700px;">
+    <h1>最近着ていない服 ランキング</h1>
+    <p class="weather-desc" style="margin-bottom:16px;">着用日が古い順（未着用が最上位）に表示しています。整理・断捨離の参考にどうぞ。</p>
+    {% if clothes %}
+    <div class="neglected-ranking">
+        {% for item in clothes %}
+        <div class="neglected-row">
+            <span class="neglected-rank">{{ loop.index }}</span>
+            <div class="neglected-info">
+                <div class="neglected-title">
+                    {{ item.name }}
+                    <span class="tag">{{ item.category }}</span>
+                </div>
+                <div class="neglected-sub">
+                    {% if item.last_worn_at %}
+                    最終着用：{{ item.last_worn_at.strftime('%Y/%m/%d') }}（{{ (today - item.last_worn_at).days }}日前）・着用{{ item.wear_count }}回
+                    {% else %}
+                    一度も着用していません
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">まだ服が登録されていません。</div>
+    {% endif %}
+    <a href="/" class="back-link">← 戻る</a>
+</div>
+{% endblock %}

@@ -1,0 +1,147 @@
+{% extends 'base.html' %}
+{% block title %}マイクローゼット{% endblock %}
+{% block content %}
+<div class="main">
+    <div class="left">
+        <div class="section-header">
+            <span class="section-title">登録済みの服</span>
+            <a href="/add" class="add-btn">＋ 服を追加</a>
+        </div>
+        <form method="GET" action="/" class="filter-bar">
+            <input type="text" name="q" placeholder="服の名前で検索" value="{{ filters.q }}">
+            <select name="category">
+                <option value="">すべてのカテゴリ</option>
+                {% for cat in categories %}
+                <option value="{{ cat }}" {% if filters.category == cat %}selected{% endif %}>{{ cat }}</option>
+                {% endfor %}
+            </select>
+            <input type="text" name="color" placeholder="色" value="{{ filters.color }}">
+            <select name="season">
+                <option value="">すべての季節</option>
+                {% for s in seasons %}
+                <option value="{{ s }}" {% if filters.season == s %}selected{% endif %}>{{ s }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="filter-btn">絞り込む</button>
+            {% if filters.q or filters.category or filters.color or filters.season %}
+            <a href="/" class="filter-clear">条件をクリア</a>
+            {% endif %}
+        </form>
+        <div class="clothes-grid">
+            {% if clothes %}
+                {% for item in clothes %}
+                <div class="clothes-card {{ 'recommended' if item.season in suitable_seasons else '' }}">
+                    <div class="clothes-img-slider">
+                        {% if item.images %}
+                            {% for img in item.images %}
+                            <img src="{{ url_for('static', filename=img.image_path) }}" alt="{{ item.name }}">
+                            {% endfor %}
+                        {% else %}
+                            <span class="no-image">👕</span>
+                        {% endif %}
+                    </div>
+                    {% if item.season in suitable_seasons %}
+                    <span class="recommend-badge">🌡️ 今日にぴったり</span>
+                    {% endif %}
+                    <div class="clothes-name">
+                        {{ item.name }}
+                        <div class="card-actions">
+                            <form method="POST" action="{{ url_for('toggle_favorite', id=item.id) }}" class="inline-form">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="icon-btn favorite-btn {{ 'active' if item.is_favorite else '' }}" title="お気に入り">{{ '★' if item.is_favorite else '☆' }}</button>
+                            </form>
+                            <a href="/edit/{{ item.id }}" class="edit-btn" title="編集">✏️</a>
+                            <form method="POST" action="{{ url_for('delete', id=item.id) }}" class="inline-form" onsubmit="return confirmDelete(this, 'この服を削除しますか？')">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="icon-btn delete-btn" title="削除">🗑</button>
+                            </form>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="tag">{{ item.category }}</span>
+                        <span class="tag">{{ item.color }}</span>
+                        <span class="tag">{{ item.season }}</span>
+                    </div>
+                    <div class="wear-row">
+                        {% if item.last_worn_at == today %}
+                        <form method="POST" action="{{ url_for('unwear', id=item.id) }}" class="inline-form">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="wear-btn wear-btn-undo">取り消す</button>
+                        </form>
+                        <span class="wear-info">本日は着用済み（計{{ item.wear_count }}回）</span>
+                        {% else %}
+                        <form method="POST" action="{{ url_for('wear', id=item.id) }}" class="inline-form">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="wear-btn">今日着た</button>
+                        </form>
+                        <span class="wear-info">
+                            着用{{ item.wear_count }}回{% if item.last_worn_at %} ・最終{{ item.last_worn_at.strftime('%m/%d') }}{% endif %}
+                        </span>
+                        {% endif %}
+                    </div>
+                    {% if item.price %}
+                    <div class="cost-info">
+                        購入価格 ¥{{ '{:,}'.format(item.price) }}
+                        {% if item.wear_count > 0 %}
+                        ・1回あたり ¥{{ '{:,}'.format((item.price / item.wear_count) | round | int) }}
+                        {% else %}
+                        ・まだ着用記録がありません
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state">
+                    {% if filters.q or filters.category or filters.color or filters.season %}
+                        条件に一致する服が見つかりませんでした。
+                    {% else %}
+                        まだ服が登録されていません。<br>「服を追加」から登録してみましょう！
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="right">
+        <div style="padding: 16px 20px 0;">
+            <div class="suggest-label">今日の天気</div>
+        </div>
+        <div class="weather-box">
+            <div class="weather-icon">☁️</div>
+            <div>
+                <div class="weather-temp">{% if temp is not none %}{{ temp }}℃{% else %}--℃{% endif %}</div>
+                <div class="weather-desc">{{ description }}</div>
+                <div class="weather-city">{{ city }}</div>
+            </div>
+        </div>
+        <form method="POST" action="/city" class="city-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="text" name="city" placeholder="都市名(例: Tokyo)" value="{{ city }}">
+            <button type="submit" class="city-btn">変更</button>
+        </form>
+        <div class="suggest-area">
+            <div class="suggest-label">今日のコーデを提案</div>
+            <a href="/suggest" class="suggest-btn">✨ AIにコーデを提案してもらう</a>
+        </div>
+        <div class="suggest-area">
+            <div class="suggest-label">最近着ていない服</div>
+            {% if neglected_preview %}
+            <ul class="neglected-list">
+                {% for item in neglected_preview %}
+                <li>
+                    <span class="neglected-name">{{ item.name }}</span>
+                    <span class="neglected-days">
+                        {% if item.last_worn_at %}{{ (today - item.last_worn_at).days }}日前{% else %}未着用{% endif %}
+                    </span>
+                </li>
+                {% endfor %}
+            </ul>
+            <a href="/rarely_worn" class="neglected-link">すべて見る →</a>
+            {% else %}
+            <div class="empty-state" style="padding:12px 0;">データがありません</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

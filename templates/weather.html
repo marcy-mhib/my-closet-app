@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+{% block title %}今日の天気{% endblock %}
+{% block content %}
+<div class="form-container" style="max-width:400px; text-align:center;">
+    <h1>今日の天気</h1>
+    <p>都市：{{ city }}</p>
+    <p>気温：{% if temp is not none %}{{ temp }}℃{% else %}--℃{% endif %}</p>
+    <p>天気：{{ description }}</p>
+    <a href="/" class="back-link">トップに戻る</a>
+</div>
+{% endblock %}
