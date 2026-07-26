@@ -39,10 +39,10 @@
             <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
                 {% for img in clothes.images %}
                 <div style="position:relative;">
-                    <img src="{{ url_for('static', filename=img.image_path) }}" width="70" style="border-radius:6px; object-fit:cover; height:70px;">
+                    <img src="{{ url_for('static', filename=img.image_path) }}" width="70" style="border-radius:6px; object-fit:cover; height:70px;" alt="{{ clothes.name }}">
                     <form method="POST" action="{{ url_for('delete_image', id=img.id) }}" class="inline-form" onsubmit="return confirmDelete(this, 'この画像を削除しますか？')" style="position:absolute; top:-6px; right:-6px;">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <button type="submit" class="image-delete-btn">×</button>
+                        <button type="submit" class="image-delete-btn" title="この画像を削除" aria-label="この画像を削除">×</button>
                     </form>
                 </div>
                 {% endfor %}

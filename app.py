@@ -6,7 +6,7 @@ from datetime import date
 
 import requests
 from dotenv import load_dotenv
-from flask import Flask, render_template, request, redirect, url_for, session, jsonify, abort
+from flask import Flask, render_template, request, redirect, url_for, jsonify, abort
 from flask_login import (
     LoginManager, UserMixin, login_user, logout_user, login_required, current_user,
 )
@@ -81,6 +81,7 @@ class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
+    city = db.Column(db.String(100))
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -142,6 +143,10 @@ def run_migrations():
         existing_coord_cols = {row[1] for row in conn.execute(text('PRAGMA table_info(coordinate)'))}
         if 'user_id' not in existing_coord_cols:
             conn.execute(text('ALTER TABLE coordinate ADD COLUMN user_id INTEGER'))
+
+        existing_user_cols = {row[1] for row in conn.execute(text('PRAGMA table_info(user)'))}
+        if 'city' not in existing_user_cols:
+            conn.execute(text('ALTER TABLE user ADD COLUMN city VARCHAR(100)'))
         conn.commit()
 
 
@@ -308,7 +313,7 @@ def logout():
 @app.route('/')
 @login_required
 def index():
-    city = session.get('city', DEFAULT_CITY)
+    city = current_user.city or DEFAULT_CITY
     q = request.args.get('q', '').strip()
     category = request.args.get('category', '')
     color = request.args.get('color', '').strip()
@@ -363,7 +368,8 @@ def rarely_worn():
 def set_city():
     city = request.form.get('city', '').strip()
     if city:
-        session['city'] = city
+        current_user.city = city
+        db.session.commit()
     return redirect(url_for('index'))
 
 
@@ -587,7 +593,7 @@ def analyze_image():
 @app.route('/suggest')
 @login_required
 def suggest():
-    city = session.get('city', DEFAULT_CITY)
+    city = current_user.city or DEFAULT_CITY
     temp, description = fetch_weather(city)
     clothes = Clothes.query.filter_by(user_id=current_user.id).all()
 
@@ -635,7 +641,7 @@ def suggest():
 @app.route('/weather')
 @login_required
 def weather():
-    city = session.get('city', DEFAULT_CITY)
+    city = current_user.city or DEFAULT_CITY
     temp, description = fetch_weather(city)
     return render_template('weather.html', temp=temp, description=description, city=city)
 

@@ -48,12 +48,12 @@
                         <div class="card-actions">
                             <form method="POST" action="{{ url_for('toggle_favorite', id=item.id) }}" class="inline-form">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <button type="submit" class="icon-btn favorite-btn {{ 'active' if item.is_favorite else '' }}" title="お気に入り">{{ '★' if item.is_favorite else '☆' }}</button>
+                                <button type="submit" class="icon-btn favorite-btn {{ 'active' if item.is_favorite else '' }}" title="お気に入り" aria-label="{{ 'お気に入りから外す' if item.is_favorite else 'お気に入りに追加' }}">{{ '★' if item.is_favorite else '☆' }}</button>
                             </form>
-                            <a href="/edit/{{ item.id }}" class="edit-btn" title="編集">✏️</a>
+                            <a href="/edit/{{ item.id }}" class="edit-btn" title="編集" aria-label="{{ item.name }}を編集">✏️</a>
                             <form method="POST" action="{{ url_for('delete', id=item.id) }}" class="inline-form" onsubmit="return confirmDelete(this, 'この服を削除しますか？')">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <button type="submit" class="icon-btn delete-btn" title="削除">🗑</button>
+                                <button type="submit" class="icon-btn delete-btn" title="削除" aria-label="{{ item.name }}を削除">🗑</button>
                             </form>
                         </div>
                     </div>
