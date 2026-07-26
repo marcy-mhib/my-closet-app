@@ -50,7 +50,6 @@
             <label>画像を追加（複数選択可）</label>
             <input type="file" name="images" id="images-input" accept="image/*" multiple>
             <div id="image-preview" class="image-preview"></div>
-            <button type="button" id="color-detect-btn" class="color-btn">🎨 画像から色を自動判定</button>
             <span id="color-status" class="ai-status"></span>
             {% if ai_enabled %}
             <button type="button" id="ai-analyze-btn" class="ai-btn">🤖 AIで自動判定</button>
@@ -76,32 +75,28 @@ document.getElementById('images-input').addEventListener('change', function (e) 
         };
         reader.readAsDataURL(file);
     });
-});
 
-document.getElementById('color-detect-btn').addEventListener('click', function () {
-    const files = document.getElementById('images-input').files;
+    const colorInput = document.getElementById('color-input');
     const status = document.getElementById('color-status');
-    if (!files.length) {
-        status.textContent = '先に画像を選択してください';
-        return;
+    if (e.target.files.length && !colorInput.value) {
+        status.textContent = '色を解析中...';
+        const formData = new FormData();
+        formData.append('image', e.target.files[0]);
+        formData.append('csrf_token', '{{ csrf_token() }}');
+        fetch('/detect_color', { method: 'POST', body: formData })
+            .then(function (res) { return res.json(); })
+            .then(function (data) {
+                if (data.error) {
+                    status.textContent = '';
+                    return;
+                }
+                colorInput.value = data.color;
+                status.textContent = '色を自動入力しました（' + data.color + '）';
+            })
+            .catch(function () {
+                status.textContent = '';
+            });
     }
-    status.textContent = '解析中...';
-    const formData = new FormData();
-    formData.append('image', files[0]);
-    formData.append('csrf_token', '{{ csrf_token() }}');
-    fetch('/detect_color', { method: 'POST', body: formData })
-        .then(function (res) { return res.json(); })
-        .then(function (data) {
-            if (data.error) {
-                status.textContent = data.error;
-                return;
-            }
-            document.getElementById('color-input').value = data.color;
-            status.textContent = '色を反映しました（' + data.color + '）';
-        })
-        .catch(function () {
-            status.textContent = '色の判定に失敗しました';
-        });
 });
 
 {% if ai_enabled %}
