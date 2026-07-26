@@ -26,8 +26,6 @@ app.secret_key = os.getenv('SECRET_KEY')
 if not app.secret_key:
     raise RuntimeError('SECRET_KEY is not set. Please define it in the .env file.')
 
-INVITE_CODE = os.getenv('INVITE_CODE')
-
 csrf = CSRFProtect(app)
 
 db = SQLAlchemy(app)
@@ -256,12 +254,9 @@ def register():
     if request.method == 'POST':
         username = request.form.get('username', '').strip()
         password = request.form.get('password', '')
-        invite_code = request.form.get('invite_code', '')
         error = None
 
-        if not INVITE_CODE or invite_code != INVITE_CODE:
-            error = '招待コードが正しくありません。'
-        elif not username or not password:
+        if not username or not password:
             error = 'ユーザー名とパスワードを入力してください。'
         elif User.query.filter_by(username=username).first():
             error = 'そのユーザー名はすでに使われています。'

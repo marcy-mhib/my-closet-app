@@ -9,11 +9,6 @@
     <form method="POST" class="validate-form">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="form-group">
-            <label>招待コード</label>
-            <input type="text" name="invite_code" required>
-            <span class="field-error">招待コードを入力してください</span>
-        </div>
-        <div class="form-group">
             <label>ユーザー名</label>
             <input type="text" name="username" required>
             <span class="field-error">ユーザー名を入力してください</span>
