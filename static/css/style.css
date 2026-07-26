@@ -574,6 +574,24 @@ body {
     color: var(--paper);
 }
 
+.color-btn {
+    display: inline-block;
+    margin-top: 8px;
+    margin-right: 8px;
+    background: var(--success-tint);
+    color: var(--success);
+    border: 1px solid var(--success);
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.color-btn:hover {
+    background: var(--success);
+    color: var(--paper);
+}
+
 .ai-status {
     display: block;
     margin-top: 6px;

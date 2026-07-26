@@ -1,4 +1,5 @@
 import base64
+import io
 import json
 import os
 import uuid
@@ -12,6 +13,7 @@ from flask_login import (
 )
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf import CSRFProtect
+from PIL import Image
 from sqlalchemy import text
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
@@ -60,6 +62,25 @@ JAPAN_CITY_NAME_MAP = {
     '沖縄': 'Naha', '那覇': 'Naha',
 }
 JAPAN_ADMIN_SUFFIXES = ('都', '道', '府', '県', '市')
+
+COLOR_PALETTE = {
+    '白': (255, 255, 255),
+    '黒': (25, 25, 25),
+    'グレー': (130, 130, 130),
+    'ネイビー': (30, 40, 70),
+    'ベージュ': (222, 202, 168),
+    '茶': (101, 67, 33),
+    'カーキ': (150, 140, 90),
+    'デニム': (66, 99, 130),
+    '赤': (200, 40, 40),
+    'ピンク': (240, 170, 190),
+    'オレンジ': (230, 130, 40),
+    '黄色': (230, 200, 40),
+    '緑': (60, 130, 70),
+    '青': (40, 100, 190),
+    '水色': (120, 190, 220),
+    '紫': (110, 70, 140),
+}
 
 NEUTRAL_COLORS = {'白', '黒', 'グレー', 'グレイ', 'ネイビー', '紺', 'ベージュ'}
 COMPATIBLE_COLOR_PAIRS = {
@@ -170,6 +191,36 @@ def save_clothes_image(image, clothes_id):
     unique_name = f'{uuid.uuid4().hex}.{ext}'
     image.save(os.path.join(app.config['UPLOAD_FOLDER'], unique_name))
     return ClothesImage(clothes_id=clothes_id, image_path=f'uploads/{unique_name}')
+
+
+def detect_dominant_color(image_bytes):
+    try:
+        img = Image.open(io.BytesIO(image_bytes)).convert('RGB')
+    except Exception:
+        return None
+
+    # 写真の外周は背景(床・壁など)が写り込みやすいため、中央寄りだけをサンプリングする
+    width, height = img.size
+    left, top = int(width * 0.25), int(height * 0.25)
+    right, bottom = int(width * 0.75), int(height * 0.75)
+    cropped = img.crop((left, top, right, bottom))
+    cropped.thumbnail((60, 60))
+
+    quantized = cropped.quantize(colors=5, method=Image.MEDIANCUT)
+    color_counts = quantized.getcolors()
+    if not color_counts:
+        return None
+    palette = quantized.getpalette()
+    color_counts.sort(reverse=True)
+    _, index = color_counts[0]
+    r, g, b = palette[index * 3:index * 3 + 3]
+
+    best_name, best_distance = None, None
+    for name, (cr, cg, cb) in COLOR_PALETTE.items():
+        distance = (r - cr) ** 2 + (g - cg) ** 2 + (b - cb) ** 2
+        if best_distance is None or distance < best_distance:
+            best_distance, best_name = distance, name
+    return best_name
 
 
 def resolve_city_name(city):
@@ -542,6 +593,23 @@ def delete_coordinate(id):
     db.session.delete(coordinate)
     db.session.commit()
     return redirect(url_for('coordinates'))
+
+
+@app.route('/detect_color', methods=['POST'])
+@login_required
+def detect_color():
+    image = request.files.get('image')
+    if not image or image.filename == '':
+        return jsonify({'error': '画像が選択されていません'}), 400
+
+    filename = secure_filename(image.filename)
+    if not filename or not allowed_file(filename):
+        return jsonify({'error': '対応していないファイル形式です'}), 400
+
+    color = detect_dominant_color(image.read())
+    if not color:
+        return jsonify({'error': '色を判定できませんでした'}), 500
+    return jsonify({'color': color})
 
 
 @app.route('/analyze_image', methods=['POST'])
