@@ -1,26 +1,32 @@
 {% extends 'base.html' %}
-{% block title %}コーデを作成{% endblock %}
+{% block title %}コーデを編集{% endblock %}
 {% block content %}
 <div class="main">
     <div class="left">
         <div class="section-header">
-            <span class="section-title">コーディネートを作成する</span>
+            <span class="section-title">コーディネートを編集する</span>
         </div>
         <form method="POST" class="validate-form" id="coordinate-form">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="form-group" style="padding: 16px 20px 0;">
                 <label>コーデ名</label>
-                <input type="text" name="name" placeholder="例：休日カジュアル" required>
+                <input type="text" name="name" value="{{ coordinate.name }}" required>
                 <span class="field-error">コーデ名を入力してください</span>
             </div>
 
             {% include '_clothes_picker.html' %}
 
-            <div style="padding: 16px 20px;">
+            <div style="padding: 16px 20px; display:flex; gap:10px;">
                 <button type="submit" class="submit-btn">保存する</button>
             </div>
         </form>
-        <a href="/coordinates" class="back-link">← 戻る</a>
+
+        <form method="POST" action="{{ url_for('delete_coordinate', id=coordinate.id) }}" class="inline-form" onsubmit="return confirmDelete(this, 'このコーディネートを削除しますか？')" style="padding: 0 20px 16px;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="delete-btn-full">このコーディネートを削除する</button>
+        </form>
+
+        <a href="{{ url_for('coordinate_detail', id=coordinate.id) }}" class="back-link">← 戻る</a>
     </div>
 
     <div class="right">

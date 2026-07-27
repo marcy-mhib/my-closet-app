@@ -55,6 +55,9 @@ CATEGORIES = ['トップス', 'ボトムス', 'アウター', 'シューズ', '�
 SEASONS = ['春', '夏', '秋', '冬', 'オールシーズン']
 DEFAULT_CITY = '東京'
 
+# コーディネート詳細画面で、実際に着る順番(頭側→足元)に近い並びで表示するための優先順位
+CATEGORY_ORDER = ['アクセサリー', 'アウター', 'トップス', 'ボトムス', 'シューズ']
+
 # OpenWeatherMapのq=パラメータは英字都市名しか安定して解決できないため、
 # 主要な都道府県名・都市名の漢字入力を英語名に変換してから問い合わせる。
 JAPAN_CITY_NAME_MAP = {
@@ -308,6 +311,16 @@ def seasons_to_string(season_list):
 def seasons_from_string(season_str):
     """DBに保存されているカンマ区切りの季節文字列を、季節名のリストに戻す。"""
     return [s for s in (season_str or '').split(',') if s]
+
+
+def sorted_by_category(items):
+    """コーディネートのアイテムを、CATEGORY_ORDERに沿って頭側→足元の順に並べ替える。"""
+    def sort_key(item):
+        try:
+            return CATEGORY_ORDER.index(item.category)
+        except ValueError:
+            return len(CATEGORY_ORDER)
+    return sorted(items, key=sort_key)
 
 
 def is_color_compatible(color1, color2):
@@ -605,7 +618,8 @@ def coordinates():
         .order_by(Coordinate.id.desc())
         .all()
     )
-    return render_template('coordinates.html', coordinates=coords)
+    coord_thumbs = {c.id: sorted_by_category(c.items)[:4] for c in coords}
+    return render_template('coordinates.html', coordinates=coords, coord_thumbs=coord_thumbs)
 
 
 @app.route('/coordinates/new', methods=['GET', 'POST'])
@@ -621,27 +635,54 @@ def new_coordinate():
             ).all()
         db.session.add(coordinate)
         db.session.commit()
-        return redirect(url_for('coordinates'))
+        return redirect(url_for('coordinate_detail', id=coordinate.id))
 
     clothes = (
         Clothes.query.filter_by(user_id=current_user.id)
         .order_by(Clothes.category, Clothes.name)
         .all()
     )
-    return render_template('coordinate_new.html', clothes=clothes)
+    return render_template('coordinate_new.html', clothes=clothes, selected_ids=set())
+
+
+@app.route('/coordinates/<int:id>/edit', methods=['GET', 'POST'])
+@login_required
+def edit_coordinate(id):
+    coordinate = owned_coordinate_or_404(id)
+    if request.method == 'POST':
+        coordinate.name = request.form['name']
+        item_ids = request.form.getlist('clothes_ids')
+        coordinate.items = (
+            Clothes.query.filter(
+                Clothes.id.in_(item_ids), Clothes.user_id == current_user.id,
+            ).all()
+            if item_ids else []
+        )
+        db.session.commit()
+        return redirect(url_for('coordinate_detail', id=coordinate.id))
+
+    clothes = (
+        Clothes.query.filter_by(user_id=current_user.id)
+        .order_by(Clothes.category, Clothes.name)
+        .all()
+    )
+    selected_ids = {item.id for item in coordinate.items}
+    return render_template(
+        'coordinate_edit.html', coordinate=coordinate, clothes=clothes, selected_ids=selected_ids,
+    )
 
 
 @app.route('/coordinates/<int:id>')
 @login_required
 def coordinate_detail(id):
     coordinate = owned_coordinate_or_404(id)
-    items = coordinate.items
+    items = sorted_by_category(coordinate.items)
     warnings = []
     for i in range(len(items)):
         for j in range(i + 1, len(items)):
             if not is_color_compatible(items[i].color, items[j].color):
                 warnings.append((items[i], items[j]))
-    return render_template('coordinate_detail.html', coordinate=coordinate, warnings=warnings)
+    return render_template('coordinate_detail.html', coordinate=coordinate, items=items, warnings=warnings)
 
 
 @app.route('/coordinates/<int:id>/delete', methods=['POST'])

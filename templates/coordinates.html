@@ -10,6 +10,19 @@
     <div class="coordinate-list">
         {% for c in coordinates %}
         <div class="coordinate-card">
+            <div class="coordinate-thumbs">
+                {% for item in coord_thumbs.get(c.id, []) %}
+                <div class="coordinate-thumb">
+                    {% if item.images %}
+                    <img src="{{ url_for('static', filename=item.images[0].image_path) }}" alt="{{ item.name }}">
+                    {% else %}
+                    <span class="no-image">👕</span>
+                    {% endif %}
+                </div>
+                {% else %}
+                <div class="coordinate-thumb"><span class="no-image">👕</span></div>
+                {% endfor %}
+            </div>
             <a href="/coordinates/{{ c.id }}" class="coordinate-name">{{ c.name }}</a>
             <div class="coordinate-tags">
                 {% for item in c.items %}
@@ -17,6 +30,13 @@
                 {% else %}
                 <span class="tag">アイテム未設定</span>
                 {% endfor %}
+            </div>
+            <div class="coordinate-card-actions">
+                <a href="/coordinates/{{ c.id }}/edit" class="edit-btn" title="編集" aria-label="{{ c.name }}を編集">✏️ 編集</a>
+                <form method="POST" action="{{ url_for('delete_coordinate', id=c.id) }}" class="inline-form" onsubmit="return confirmDelete(this, 'このコーディネートを削除しますか？')">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="icon-btn delete-btn" title="削除" aria-label="{{ c.name }}を削除">🗑 削除</button>
+                </form>
             </div>
         </div>
         {% endfor %}

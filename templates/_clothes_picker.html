@@ -1,0 +1,31 @@
+{% if clothes %}
+<div class="clothes-grid" id="clothes-picker">
+    {% for item in clothes %}
+    <label class="clothes-card pick-card {{ 'selected' if item.id in selected_ids else '' }}">
+        <input
+            type="checkbox"
+            name="clothes_ids"
+            value="{{ item.id }}"
+            class="pick-checkbox"
+            data-name="{{ item.name }}"
+            data-image="{{ url_for('static', filename=item.images[0].image_path) if item.images else '' }}"
+            {% if item.id in selected_ids %}checked{% endif %}
+        >
+        <div class="clothes-img-slider">
+            {% if item.images %}
+            <img src="{{ url_for('static', filename=item.images[0].image_path) }}" alt="{{ item.name }}">
+            {% else %}
+            <span class="no-image">👕</span>
+            {% endif %}
+        </div>
+        <div class="clothes-name">{{ item.name }}</div>
+        <div>
+            <span class="tag">{{ item.category }}</span>
+            <span class="tag">{{ item.color }}</span>
+        </div>
+    </label>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">先に服を登録してください。</div>
+{% endif %}

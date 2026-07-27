@@ -2,18 +2,32 @@
 {% block title %}{{ coordinate.name }}{% endblock %}
 {% block content %}
 <div class="form-container" style="max-width:700px;">
-    <h1>{{ coordinate.name }}</h1>
-    <div class="coordinate-items">
-        {% for item in coordinate.items %}
-        <div class="coordinate-item-row">
-            <span class="tag">{{ item.category }}</span>
-            <span>{{ item.name }}</span>
-            <span class="tag">{{ item.color }}</span>
+    <div class="section-header" style="padding:0 0 16px; border-bottom:none;">
+        <h1 style="font-size:18px; font-weight:500; margin:0;">{{ coordinate.name }}</h1>
+        <a href="{{ url_for('edit_coordinate', id=coordinate.id) }}" class="edit-btn" title="編集" aria-label="{{ coordinate.name }}を編集">✏️ 編集</a>
+    </div>
+
+    <div class="coordinate-look-grid">
+        {% for item in items %}
+        <div class="coordinate-look-card">
+            <div class="coordinate-look-media">
+                {% if item.images %}
+                <img src="{{ url_for('static', filename=item.images[0].image_path) }}" alt="{{ item.name }}">
+                {% else %}
+                <span class="no-image">👕</span>
+                {% endif %}
+            </div>
+            <div class="coordinate-look-name">{{ item.name }}</div>
+            <div>
+                <span class="tag">{{ item.category }}</span>
+                <span class="tag">{{ item.color }}</span>
+            </div>
         </div>
         {% else %}
         <div class="empty-state">アイテムが設定されていません。</div>
         {% endfor %}
     </div>
+
     {% if warnings %}
     <div class="color-warning">
         ⚠️ 色の相性が気になる組み合わせがあります：
@@ -21,9 +35,10 @@
         {{ a.name }}（{{ a.color }}） × {{ b.name }}（{{ b.color }}）{% if not loop.last %}, {% endif %}
         {% endfor %}
     </div>
-    {% elif coordinate.items|length > 1 %}
+    {% elif items|length > 1 %}
     <div class="color-ok">✅ 色の相性は良さそうです</div>
     {% endif %}
+
     <form method="POST" action="{{ url_for('delete_coordinate', id=coordinate.id) }}" class="inline-form" onsubmit="return confirmDelete(this, 'このコーディネートを削除しますか？')">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button type="submit" class="delete-btn-full">削除する</button>
