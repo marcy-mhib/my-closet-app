@@ -1,4 +1,4 @@
-# マイクローゼット（My Closet）
+# クロークノート（Cloak Note）
 
 服の管理・コーディネート提案ができる、家族・友人向けの小規模Webクローゼットアプリです。
 Flask + SQLite で構築し、天気に応じたコーデ提案には Anthropic Claude API を使用しています。
