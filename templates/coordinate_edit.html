@@ -31,7 +31,7 @@
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="delete-btn-full small-btn">このコーディネートを削除する</button>
             </form>
-            <a href="{{ url_for('coordinate_detail', id=coordinate.id) }}" class="back-link">← 戻る</a>
+            <a href="{{ url_for('coordinates') }}" class="back-link">← 戻る</a>
         </div>
     </div>
 </div>

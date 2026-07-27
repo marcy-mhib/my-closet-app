@@ -34,7 +34,7 @@
                 <div class="coordinate-thumb thumb-tops"><span class="no-image">👕</span></div>
                 {% endfor %}
             </div>
-            <a href="/coordinates/{{ c.id }}" class="coordinate-name">{{ c.name }}</a>
+            <div class="coordinate-name">{{ c.name }}</div>
             <div class="coordinate-tags">
                 {% for item in c.items %}
                 <span class="tag">{{ item.name }}</span>

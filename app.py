@@ -99,15 +99,6 @@ COLOR_PALETTE = {
     '紫': (110, 70, 140),
 }
 
-NEUTRAL_COLORS = {'白', '黒', 'グレー', 'グレイ', 'ネイビー', '紺', 'ベージュ'}
-COMPATIBLE_COLOR_PAIRS = {
-    frozenset({'デニム', '白'}),
-    frozenset({'カーキ', '茶'}),
-    frozenset({'白', '黒'}),
-    frozenset({'青', '白'}),
-    frozenset({'ピンク', 'グレー'}),
-}
-
 # ---- 3. モデル定義 ----
 # Coordinate(コーディネート)とClothes(服)は「多対多」の関係なので、
 # 中間テーブル(どのコーデにどの服が入っているかの対応表)が別途必要になる。
@@ -321,18 +312,6 @@ def sorted_by_category(items):
         except ValueError:
             return len(CATEGORY_ORDER)
     return sorted(items, key=sort_key)
-
-
-def is_color_compatible(color1, color2):
-    """2色の組み合わせが良さそうか判定する。白・黒などの無彩色は何とでも合う扱いにする簡易ルール。"""
-    if not color1 or not color2:
-        return True
-    c1, c2 = color1.strip(), color2.strip()
-    if c1 == c2:
-        return True
-    if c1 in NEUTRAL_COLORS or c2 in NEUTRAL_COLORS:
-        return True
-    return frozenset({c1, c2}) in COMPATIBLE_COLOR_PAIRS
 
 
 def get_anthropic_client():
@@ -628,7 +607,7 @@ def new_coordinate():
             ).all()
         db.session.add(coordinate)
         db.session.commit()
-        return redirect(url_for('coordinate_detail', id=coordinate.id))
+        return redirect(url_for('coordinates'))
 
     clothes = (
         Clothes.query.filter_by(user_id=current_user.id)
@@ -652,7 +631,7 @@ def edit_coordinate(id):
             if item_ids else []
         )
         db.session.commit()
-        return redirect(url_for('coordinate_detail', id=coordinate.id))
+        return redirect(url_for('coordinates'))
 
     clothes = (
         Clothes.query.filter_by(user_id=current_user.id)
@@ -663,19 +642,6 @@ def edit_coordinate(id):
     return render_template(
         'coordinate_edit.html', coordinate=coordinate, clothes=clothes, selected_ids=selected_ids,
     )
-
-
-@app.route('/coordinates/<int:id>')
-@login_required
-def coordinate_detail(id):
-    coordinate = owned_coordinate_or_404(id)
-    items = sorted_by_category(coordinate.items)
-    warnings = []
-    for i in range(len(items)):
-        for j in range(i + 1, len(items)):
-            if not is_color_compatible(items[i].color, items[j].color):
-                warnings.append((items[i], items[j]))
-    return render_template('coordinate_detail.html', coordinate=coordinate, items=items, warnings=warnings)
 
 
 @app.route('/coordinates/<int:id>/delete', methods=['POST'])
