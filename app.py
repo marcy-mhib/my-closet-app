@@ -449,12 +449,6 @@ def index():
     recommended_ids = {
         c.id for c in clothes if set(seasons_from_string(c.season)) & suitable_seasons
     }
-    neglected_preview = (
-        Clothes.query.filter_by(user_id=current_user.id)
-        .order_by(Clothes.last_worn_at.asc())
-        .limit(5)
-        .all()
-    )
     return render_template(
         'index.html',
         clothes=clothes,
@@ -465,7 +459,6 @@ def index():
         seasons=SEASONS,
         today=date.today(),
         recommended_ids=recommended_ids,
-        neglected_preview=neglected_preview,
         filters={'q': q, 'category': category, 'color': color, 'season': season},
     )
 

@@ -15,12 +15,7 @@
             </div>
 
             {% include '_clothes_picker.html' %}
-
-            <div style="padding: 16px 20px;">
-                <button type="submit" class="submit-btn">保存する</button>
-            </div>
         </form>
-        <a href="/coordinates" class="back-link">← 戻る</a>
     </div>
 
     <div class="right">
@@ -29,6 +24,10 @@
         </div>
         <div id="selected-preview" class="selected-preview">
             <div class="empty-state" id="selected-empty">まだ何も選んでいません</div>
+        </div>
+        <div class="coordinate-edit-actions">
+            <button type="submit" form="coordinate-form" class="submit-btn small-btn">保存する</button>
+            <a href="/coordinates" class="back-link">← 戻る</a>
         </div>
     </div>
 </div>

@@ -127,22 +127,8 @@
             <a href="/suggest" class="suggest-btn">✨ AIにコーデを提案してもらう</a>
         </div>
         <div class="suggest-area">
-            <div class="suggest-label">最近着ていない服</div>
-            {% if neglected_preview %}
-            <ul class="neglected-list">
-                {% for item in neglected_preview %}
-                <li>
-                    <span class="neglected-name">{{ item.name }}</span>
-                    <span class="neglected-days">
-                        {% if item.last_worn_at %}{{ (today - item.last_worn_at).days }}日前{% else %}未着用{% endif %}
-                    </span>
-                </li>
-                {% endfor %}
-            </ul>
-            <a href="/rarely_worn" class="neglected-link">すべて見る →</a>
-            {% else %}
-            <div class="empty-state" style="padding:12px 0;">データがありません</div>
-            {% endif %}
+            <div class="suggest-label">整理・断捨離の参考に</div>
+            <a href="/rarely_worn" class="suggest-btn">📦 最近着ていない服を見る</a>
         </div>
     </div>
 </div>

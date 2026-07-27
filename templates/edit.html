@@ -44,10 +44,14 @@
                 {% for img in clothes.images %}
                 <div style="position:relative;">
                     <img src="{{ url_for('static', filename=img.image_path) }}" width="70" style="border-radius:6px; object-fit:cover; height:70px;" alt="{{ clothes.name }}">
-                    <form method="POST" action="{{ url_for('delete_image', id=img.id) }}" class="inline-form" onsubmit="return confirmDelete(this, 'この画像を削除しますか？')" style="position:absolute; top:-6px; right:-6px;">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <button type="submit" class="image-delete-btn" title="この画像を削除" aria-label="この画像を削除">×</button>
-                    </form>
+                    <button
+                        type="submit"
+                        form="delete-image-{{ img.id }}"
+                        class="image-delete-btn"
+                        title="この画像を削除"
+                        aria-label="この画像を削除"
+                        style="position:absolute; top:-6px; right:-6px;"
+                    >×</button>
                 </div>
                 {% endfor %}
             </div>
@@ -62,6 +66,21 @@
         </div>
         <button type="submit" class="submit-btn">保存する</button>
     </form>
+
+    {# 画像削除フォームは編集フォームの外側に置く(<form>の入れ子はHTML上不可なため、
+       上のボタンから form="delete-image-..." 属性で参照する) #}
+    {% for img in clothes.images %}
+    <form
+        method="POST"
+        action="{{ url_for('delete_image', id=img.id) }}"
+        id="delete-image-{{ img.id }}"
+        onsubmit="return confirmDelete(this, 'この画像を削除しますか？')"
+        style="display:none;"
+    >
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    </form>
+    {% endfor %}
+
     <a href="/" class="back-link">← 戻る</a>
 </div>
 {% endblock %}

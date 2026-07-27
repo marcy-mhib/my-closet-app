@@ -15,18 +15,7 @@
             </div>
 
             {% include '_clothes_picker.html' %}
-
-            <div style="padding: 16px 20px; display:flex; gap:10px;">
-                <button type="submit" class="submit-btn">保存する</button>
-            </div>
         </form>
-
-        <form method="POST" action="{{ url_for('delete_coordinate', id=coordinate.id) }}" class="inline-form" onsubmit="return confirmDelete(this, 'このコーディネートを削除しますか？')" style="padding: 0 20px 16px;">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button type="submit" class="delete-btn-full">このコーディネートを削除する</button>
-        </form>
-
-        <a href="{{ url_for('coordinate_detail', id=coordinate.id) }}" class="back-link">← 戻る</a>
     </div>
 
     <div class="right">
@@ -35,6 +24,14 @@
         </div>
         <div id="selected-preview" class="selected-preview">
             <div class="empty-state" id="selected-empty">まだ何も選んでいません</div>
+        </div>
+        <div class="coordinate-edit-actions">
+            <button type="submit" form="coordinate-form" class="submit-btn small-btn">保存する</button>
+            <form method="POST" action="{{ url_for('delete_coordinate', id=coordinate.id) }}" class="inline-form" onsubmit="return confirmDelete(this, 'このコーディネートを削除しますか？')">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="delete-btn-full small-btn">このコーディネートを削除する</button>
+            </form>
+            <a href="{{ url_for('coordinate_detail', id=coordinate.id) }}" class="back-link">← 戻る</a>
         </div>
     </div>
 </div>
