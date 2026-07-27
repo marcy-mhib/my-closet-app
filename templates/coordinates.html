@@ -4,15 +4,26 @@
 <div class="form-container" style="max-width:700px;">
     <div class="section-header" style="padding:0 0 16px; border-bottom:none;">
         <h1 style="font-size:18px; font-weight:500; margin:0;">コーディネート一覧</h1>
-        <a href="/coordinates/new" class="add-btn">＋ コーデを作成</a>
+        <div class="header-actions">
+            <a href="/coordinates/new" class="add-btn">＋ コーデを作成</a>
+            <a href="/" class="header-back-btn">← 戻る</a>
+        </div>
     </div>
     {% if coordinates %}
+    {# カテゴリごとにサムネイルの高さを変えて、頭〜足元の人型シルエットに近い見え方にする #}
+    {% set thumb_classes = {
+        'アクセサリー': 'thumb-accessory',
+        'アウター': 'thumb-outer',
+        'トップス': 'thumb-tops',
+        'ボトムス': 'thumb-bottoms',
+        'シューズ': 'thumb-shoes'
+    } %}
     <div class="coordinate-list">
         {% for c in coordinates %}
         <div class="coordinate-card">
             <div class="coordinate-thumbs">
                 {% for item in coord_thumbs.get(c.id, []) %}
-                <div class="coordinate-thumb">
+                <div class="coordinate-thumb {{ thumb_classes.get(item.category, 'thumb-other') }}">
                     {% if item.images %}
                     <img src="{{ url_for('static', filename=item.images[0].image_path) }}" alt="{{ item.name }}">
                     {% else %}
@@ -20,7 +31,7 @@
                     {% endif %}
                 </div>
                 {% else %}
-                <div class="coordinate-thumb"><span class="no-image">👕</span></div>
+                <div class="coordinate-thumb thumb-tops"><span class="no-image">👕</span></div>
                 {% endfor %}
             </div>
             <a href="/coordinates/{{ c.id }}" class="coordinate-name">{{ c.name }}</a>
@@ -44,6 +55,5 @@
     {% else %}
     <div class="empty-state">まだコーディネートが登録されていません。</div>
     {% endif %}
-    <a href="/" class="back-link">← 戻る</a>
 </div>
 {% endblock %}
