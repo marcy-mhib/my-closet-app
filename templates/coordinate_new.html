@@ -1,32 +1,113 @@
 {% extends 'base.html' %}
 {% block title %}コーデを作成{% endblock %}
 {% block content %}
-<div class="form-container" style="max-width:700px;">
-    <h1>コーディネートを作成する</h1>
-    <form method="POST" class="validate-form">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <div class="form-group">
-            <label>コーデ名</label>
-            <input type="text" name="name" placeholder="例：休日カジュアル" required>
-            <span class="field-error">コーデ名を入力してください</span>
+<div class="main">
+    <div class="left">
+        <div class="section-header">
+            <span class="section-title">コーディネートを作成する</span>
         </div>
-        <div class="form-group">
-            <label>組み合わせる服を選択</label>
+        <form method="POST" class="validate-form" id="coordinate-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="form-group" style="padding: 16px 20px 0;">
+                <label>コーデ名</label>
+                <input type="text" name="name" placeholder="例：休日カジュアル" required>
+                <span class="field-error">コーデ名を入力してください</span>
+            </div>
+
             {% if clothes %}
-            <div class="clothes-checklist">
+            <div class="clothes-grid" id="clothes-picker">
                 {% for item in clothes %}
-                <label class="clothes-checkbox">
-                    <input type="checkbox" name="clothes_ids" value="{{ item.id }}">
-                    {{ item.name }}（{{ item.category }}・{{ item.color }}）
+                <label class="clothes-card pick-card">
+                    <input
+                        type="checkbox"
+                        name="clothes_ids"
+                        value="{{ item.id }}"
+                        class="pick-checkbox"
+                        data-name="{{ item.name }}"
+                        data-image="{{ url_for('static', filename=item.images[0].image_path) if item.images else '' }}"
+                    >
+                    <div class="clothes-img-slider">
+                        {% if item.images %}
+                        <img src="{{ url_for('static', filename=item.images[0].image_path) }}" alt="{{ item.name }}">
+                        {% else %}
+                        <span class="no-image">👕</span>
+                        {% endif %}
+                    </div>
+                    <div class="clothes-name">{{ item.name }}</div>
+                    <div>
+                        <span class="tag">{{ item.category }}</span>
+                        <span class="tag">{{ item.color }}</span>
+                    </div>
                 </label>
                 {% endfor %}
             </div>
             {% else %}
             <div class="empty-state">先に服を登録してください。</div>
             {% endif %}
+
+            <div style="padding: 16px 20px;">
+                <button type="submit" class="submit-btn">保存する</button>
+            </div>
+        </form>
+        <a href="/coordinates" class="back-link">← 戻る</a>
+    </div>
+
+    <div class="right">
+        <div style="padding: 16px 20px 0;">
+            <div class="suggest-label">選んだアイテム</div>
         </div>
-        <button type="submit" class="submit-btn">保存する</button>
-    </form>
-    <a href="/coordinates" class="back-link">← 戻る</a>
+        <div id="selected-preview" class="selected-preview">
+            <div class="empty-state" id="selected-empty">まだ何も選んでいません</div>
+        </div>
+    </div>
 </div>
+{% endblock %}
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const checkboxes = document.querySelectorAll('.pick-checkbox');
+    const preview = document.getElementById('selected-preview');
+    const emptyMsg = document.getElementById('selected-empty');
+
+    function renderPreview() {
+        preview.innerHTML = '';
+        const checked = Array.from(checkboxes).filter(function (cb) { return cb.checked; });
+        if (!checked.length) {
+            preview.appendChild(emptyMsg);
+            return;
+        }
+        checked.forEach(function (cb) {
+            const row = document.createElement('div');
+            row.className = 'selected-item-row';
+
+            const thumb = document.createElement('div');
+            thumb.className = 'selected-item-thumb';
+            if (cb.dataset.image) {
+                const img = document.createElement('img');
+                img.src = cb.dataset.image;
+                img.alt = cb.dataset.name;
+                thumb.appendChild(img);
+            } else {
+                thumb.textContent = '👕';
+            }
+
+            const name = document.createElement('span');
+            name.textContent = cb.dataset.name;
+
+            row.appendChild(thumb);
+            row.appendChild(name);
+            preview.appendChild(row);
+        });
+    }
+
+    checkboxes.forEach(function (cb) {
+        cb.addEventListener('change', function () {
+            cb.closest('.pick-card').classList.toggle('selected', cb.checked);
+            renderPreview();
+        });
+    });
+
+    renderPreview();
+});
+</script>
 {% endblock %}

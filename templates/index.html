@@ -30,7 +30,7 @@
         <div class="clothes-grid">
             {% if clothes %}
                 {% for item in clothes %}
-                <div class="clothes-card {{ 'recommended' if item.season in suitable_seasons else '' }}">
+                <div class="clothes-card {{ 'recommended' if item.id in recommended_ids else '' }}">
                     <div class="clothes-img-slider">
                         {% if item.images %}
                             {% for img in item.images %}
@@ -40,7 +40,7 @@
                             <span class="no-image">👕</span>
                         {% endif %}
                     </div>
-                    {% if item.season in suitable_seasons %}
+                    {% if item.id in recommended_ids %}
                     <span class="recommend-badge">🌡️ 今日にぴったり</span>
                     {% endif %}
                     <div class="clothes-name">
@@ -60,7 +60,9 @@
                     <div>
                         <span class="tag">{{ item.category }}</span>
                         <span class="tag">{{ item.color }}</span>
-                        <span class="tag">{{ item.season }}</span>
+                        {% for s in (item.season or '').split(',') if s %}
+                        <span class="tag">{{ s }}</span>
+                        {% endfor %}
                     </div>
                     <div class="wear-row">
                         {% if item.last_worn_at == today %}
@@ -117,7 +119,7 @@
         </div>
         <form method="POST" action="/city" class="city-form">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <input type="text" name="city" placeholder="都市名(例: Tokyo)" value="{{ city }}">
+            <input type="text" name="city" placeholder="都市名(例: 東京)" value="{{ city }}">
             <button type="submit" class="city-btn">変更</button>
         </form>
         <div class="suggest-area">

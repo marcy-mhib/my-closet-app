@@ -23,12 +23,16 @@
             <input type="text" name="color" id="color-input" value="{{ clothes.color }}">
         </div>
         <div class="form-group">
-            <label>季節</label>
-            <select name="season" id="season-select">
+            <label>季節(複数選択可)</label>
+            <div class="season-checklist" id="season-checklist">
+                {% set selected_seasons = (clothes.season or '').split(',') %}
                 {% for s in seasons %}
-                <option {% if clothes.season == s %}selected{% endif %}>{{ s }}</option>
+                <label class="season-checkbox">
+                    <input type="checkbox" name="season" value="{{ s }}" {% if s in selected_seasons %}checked{% endif %}>
+                    {{ s }}
+                </label>
                 {% endfor %}
-            </select>
+            </div>
         </div>
         <div class="form-group">
             <label>購入価格（円・任意）</label>
@@ -119,10 +123,13 @@ document.getElementById('ai-analyze-btn').addEventListener('click', function () 
                 return;
             }
             const categorySelect = document.querySelector('select[name="category"]');
-            const seasonSelect = document.getElementById('season-select');
             const colorInput = document.getElementById('color-input');
             if (data.category) categorySelect.value = data.category;
-            if (data.season) seasonSelect.value = data.season;
+            if (data.season) {
+                document.querySelectorAll('#season-checklist input[name="season"]').forEach(function (cb) {
+                    if (cb.value === data.season) cb.checked = true;
+                });
+            }
             if (data.color) colorInput.value = data.color;
             status.textContent = '判定結果を反映しました';
         })

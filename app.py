@@ -53,7 +53,7 @@ login_manager.login_message = 'ログインしてください'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 CATEGORIES = ['トップス', 'ボトムス', 'アウター', 'シューズ', 'アクセサリー']
 SEASONS = ['春', '夏', '秋', '冬', 'オールシーズン']
-DEFAULT_CITY = 'Fukuoka'
+DEFAULT_CITY = '東京'
 
 # OpenWeatherMapのq=パラメータは英字都市名しか安定して解決できないため、
 # 主要な都道府県名・都市名の漢字入力を英語名に変換してから問い合わせる。
@@ -100,7 +100,7 @@ NEUTRAL_COLORS = {'白', '黒', 'グレー', 'グレイ', 'ネイビー', '紺',
 COMPATIBLE_COLOR_PAIRS = {
     frozenset({'デニム', '白'}),
     frozenset({'カーキ', '茶'}),
-    frozenset({'赤', '黒'}),
+    frozenset({'白', '黒'}),
     frozenset({'青', '白'}),
     frozenset({'ピンク', 'グレー'}),
 }
@@ -300,6 +300,16 @@ def suitable_seasons_for_temp(temp):
     return {'冬', 'オールシーズン'}
 
 
+def seasons_to_string(season_list):
+    """複数選択された季節のリストを、DBに保存する1つの文字列("春,秋"のようなカンマ区切り)に変換する。"""
+    return ','.join(s for s in season_list if s)
+
+
+def seasons_from_string(season_str):
+    """DBに保存されているカンマ区切りの季節文字列を、季節名のリストに戻す。"""
+    return [s for s in (season_str or '').split(',') if s]
+
+
 def is_color_compatible(color1, color2):
     """2色の組み合わせが良さそうか判定する。白・黒などの無彩色は何とでも合う扱いにする簡易ルール。"""
     if not color1 or not color2:
@@ -417,10 +427,15 @@ def index():
     if color:
         query = query.filter(Clothes.color.ilike(f'%{color}%'))
     if season:
-        query = query.filter_by(season=season)
+        # season列は"春,秋"のようなカンマ区切りで複数季節を持ちうるため、部分一致で絞り込む
+        query = query.filter(Clothes.season.ilike(f'%{season}%'))
     clothes = query.order_by(Clothes.id.desc()).all()
 
     temp, description = fetch_weather(city)
+    suitable_seasons = suitable_seasons_for_temp(temp)
+    recommended_ids = {
+        c.id for c in clothes if set(seasons_from_string(c.season)) & suitable_seasons
+    }
     neglected_preview = (
         Clothes.query.filter_by(user_id=current_user.id)
         .order_by(Clothes.last_worn_at.asc())
@@ -436,7 +451,7 @@ def index():
         categories=CATEGORIES,
         seasons=SEASONS,
         today=date.today(),
-        suitable_seasons=suitable_seasons_for_temp(temp),
+        recommended_ids=recommended_ids,
         neglected_preview=neglected_preview,
         filters={'q': q, 'category': category, 'color': color, 'season': season},
     )
@@ -470,7 +485,7 @@ def add():
         name = request.form['name']
         category = request.form['category']
         color = request.form['color']
-        season = request.form['season']
+        season = seasons_to_string(request.form.getlist('season'))
         price = parse_price(request.form.get('price'))
 
         new_clothes = Clothes(
@@ -505,7 +520,7 @@ def edit(id):
         clothes.name = request.form['name']
         clothes.category = request.form['category']
         clothes.color = request.form['color']
-        clothes.season = request.form['season']
+        clothes.season = seasons_to_string(request.form.getlist('season'))
         clothes.price = parse_price(request.form.get('price'))
 
         images = request.files.getlist('images')
@@ -725,7 +740,9 @@ def suggest():
         )
 
     wardrobe_lines = [
-        f'- {c.name}(カテゴリ: {c.category}, 色: {c.color}, 季節: {c.season})' for c in clothes
+        f'- {c.name}(カテゴリ: {c.category}, 色: {c.color}, '
+        f'季節: {"・".join(seasons_from_string(c.season)) or "未設定"})'
+        for c in clothes
     ]
     prompt = (
         f'今日の{city}の天気は「{description}」、気温は{temp}℃です。\n'
