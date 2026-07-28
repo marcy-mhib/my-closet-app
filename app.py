@@ -852,6 +852,8 @@ def unwear(id):
 @login_required
 def coordinates():
     q = request.args.get('q', '').strip()
+    category = request.args.get('category', '')
+    color = request.args.get('color', '').strip()
     season = request.args.get('season', '')
 
     query = Coordinate.query.filter_by(user_id=current_user.id)
@@ -863,8 +865,13 @@ def coordinates():
                 Coordinate.items.any(Clothes.name.ilike(f'%{q}%')),
             )
         )
+    # カテゴリ・色・季節はコーデ自体でなくアイテム側が持つ情報なので、
+    # 含まれるアイテムのどれかが一致すればそのコーデをヒットさせる(クローゼットの検索と同じ考え方)
+    if category:
+        query = query.filter(Coordinate.items.any(Clothes.category == category))
+    if color:
+        query = query.filter(Coordinate.items.any(Clothes.color.ilike(f'%{color}%')))
     if season:
-        # 季節はコーデ自体でなくアイテム側が持つ情報なので、含まれるアイテムのどれかが一致すればヒットさせる
         query = query.filter(Coordinate.items.any(Clothes.season.ilike(f'%{season}%')))
     coords = query.order_by(Coordinate.id.desc()).all()
 
@@ -879,7 +886,8 @@ def coordinates():
 
     return render_template(
         'coordinates.html', coordinates=coords, coord_thumbs=coord_thumbs,
-        seasons=SEASONS, filters={'q': q, 'season': season},
+        categories=CATEGORIES, seasons=SEASONS,
+        filters={'q': q, 'category': category, 'color': color, 'season': season},
     )
 
 

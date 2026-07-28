@@ -11,6 +11,13 @@
     </div>
     <form method="GET" action="/coordinates" class="filter-bar" style="padding:0 0 16px; border-bottom:none;">
         <input type="text" name="q" placeholder="コーデ名・アイテム名で検索" value="{{ filters.q }}">
+        <select name="category">
+            <option value="">すべてのカテゴリ</option>
+            {% for cat in categories %}
+            <option value="{{ cat }}" {% if filters.category == cat %}selected{% endif %}>{{ cat }}</option>
+            {% endfor %}
+        </select>
+        <input type="text" name="color" placeholder="色" value="{{ filters.color }}">
         <select name="season">
             <option value="">すべての季節</option>
             {% for s in seasons %}
@@ -18,7 +25,7 @@
             {% endfor %}
         </select>
         <button type="submit" class="filter-btn">絞り込む</button>
-        {% if filters.q or filters.season %}
+        {% if filters.q or filters.category or filters.color or filters.season %}
         <a href="/coordinates" class="filter-clear">条件をクリア</a>
         {% endif %}
     </form>
@@ -77,7 +84,7 @@
     </div>
     {% else %}
     <div class="empty-state">
-        {% if filters.q or filters.season %}
+        {% if filters.q or filters.category or filters.color or filters.season %}
         条件に一致するコーディネートが見つかりませんでした。
         {% else %}
         まだコーディネートが登録されていません。
