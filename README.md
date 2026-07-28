@@ -26,7 +26,7 @@ Flask + SQLite で構築し、天気に応じたコーデ提案には Anthropic 
 - **Backend**: Python / Flask / Flask-SQLAlchemy / Flask-Login / Flask-WTF（CSRF対策）
 - **DB**: SQLite
 - **AI**: Anthropic Claude API（画像認識・コーデ提案）
-- **外部API**: OpenWeatherMap（天気取得）
+- **外部API**: 気象庁アメダス（天気取得）
 - **Frontend**: Jinja2 テンプレート / Vanilla CSS・JavaScript（ビルドツールなし）
 
 ## セキュリティ面での工夫
@@ -47,11 +47,12 @@ pip install -r requirements.txt
 `.env` を作成し、以下を設定してください。
 
 ```
-OPENWEATHER_API_KEY=（OpenWeatherMapのAPIキー）
 SECRET_KEY=（ランダムな文字列）
 FLASK_DEBUG=True
 ANTHROPIC_API_KEY=（任意。AI機能を使う場合のみ）
 ```
+
+天気機能は気象庁アメダスの公開データを使用しており、APIキーは不要です。
 
 ```bash
 python app.py

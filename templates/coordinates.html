@@ -25,7 +25,7 @@
                 {% for item in coord_thumbs.get(c.id, []) %}
                 <div class="coordinate-thumb {{ thumb_classes.get(item.category, 'thumb-other') }}">
                     {% if item.images %}
-                    <img src="{{ url_for('static', filename=item.images[0].image_path) }}" alt="{{ item.name }}">
+                    <img src="{{ url_for('static', filename=item.images[0].thumbnail_path) }}" alt="{{ item.name }}">
                     {% else %}
                     <span class="no-image">👕</span>
                     {% endif %}

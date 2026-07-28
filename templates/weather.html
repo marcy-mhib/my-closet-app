@@ -1,11 +1,38 @@
 {% extends 'base.html' %}
 {% block title %}今日の天気{% endblock %}
 {% block content %}
-<div class="form-container" style="max-width:400px; text-align:center;">
-    <h1>今日の天気</h1>
-    <p>都市：{{ city }}</p>
-    <p>気温：{% if temp is not none %}{{ temp }}℃{% else %}--℃{% endif %}</p>
-    <p>天気：{{ description }}</p>
-    <a href="/" class="back-link">トップに戻る</a>
+<div class="form-container" style="max-width:600px;">
+    <div class="section-header" style="padding:0 0 16px; border-bottom:none;">
+        <h1 style="font-size:18px; font-weight:500; margin:0;">今日の天気</h1>
+        <a href="/" class="header-back-btn">← 戻る</a>
+    </div>
+
+    <div class="weather-box" style="margin:0 0 16px;">
+        <div class="weather-icon">☁️</div>
+        <div>
+            <div class="weather-temp">{% if temp is not none %}{{ temp }}℃{% else %}--℃{% endif %}</div>
+            <div class="weather-desc">{{ description }}</div>
+            <div class="weather-city">{{ city }}</div>
+        </div>
+    </div>
+
+    <form method="POST" action="/city" class="city-form" style="margin-bottom:20px;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="text" name="city" placeholder="都市名(例: 東京)" value="{{ city }}">
+        <button type="submit" class="city-btn">変更</button>
+    </form>
+
+    {% if city_weather %}
+    <div class="pref-map-label">県内の主要都市</div>
+    <div class="pref-map">
+        {% for spot in city_weather %}
+        <div class="pref-city pref-pos-{{ spot.pos }}">
+            <div class="pref-city-name">{{ spot.name }}</div>
+            <div class="pref-city-temp">{% if spot.temp is not none %}{{ spot.temp }}℃{% else %}--℃{% endif %}</div>
+            <div class="pref-city-desc">{{ spot.description }}</div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
 </div>
 {% endblock %}

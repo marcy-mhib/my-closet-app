@@ -99,8 +99,8 @@ body {
 
 .main {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    max-width: 1100px;
+    grid-template-columns: 3fr 2fr;
+    max-width: 1320px;
     margin: 24px auto;
     background: var(--paper);
     border-radius: 12px;
@@ -185,7 +185,7 @@ body {
 .clothes-grid {
     padding: 16px 20px;
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(3, 1fr);
     gap: 14px;
     overflow-y: auto;
     align-content: start;
@@ -340,6 +340,70 @@ body {
     margin-top: 2px;
 }
 
+.pref-map-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink-muted);
+    margin-bottom: 8px;
+}
+
+/* 県内の主要都市を、実際のおおまかな位置関係(コンパス方位)に合わせて3x3グリッドに配置する */
+.pref-map {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, minmax(84px, auto));
+    grid-template-areas:
+        "nw n ne"
+        "w c e"
+        "sw s se";
+    gap: 8px;
+    background: var(--canvas);
+    border: 1px solid var(--thread);
+    border-radius: 12px;
+    padding: 16px;
+}
+
+.pref-city {
+    background: var(--paper);
+    border: 1px solid var(--thread);
+    border-radius: 8px;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    text-align: center;
+}
+
+.pref-pos-nw { grid-area: nw; }
+.pref-pos-n  { grid-area: n; }
+.pref-pos-ne { grid-area: ne; }
+.pref-pos-w  { grid-area: w; }
+.pref-pos-c  { grid-area: c; }
+.pref-pos-e  { grid-area: e; }
+.pref-pos-sw { grid-area: sw; }
+.pref-pos-s  { grid-area: s; }
+.pref-pos-se { grid-area: se; }
+
+.pref-city-name {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 12px;
+}
+
+.pref-city-temp {
+    font-family: var(--font-mono);
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--indigo);
+}
+
+.pref-city-desc {
+    font-size: 10px;
+    color: var(--ink-muted);
+}
+
 .suggest-area {
     padding: 0 20px 20px;
 }
@@ -396,6 +460,12 @@ body {
     font-size: 13px;
     color: var(--ink-muted);
     margin-bottom: 6px;
+}
+
+.field-hint {
+    font-size: 12px;
+    color: var(--ink-muted);
+    margin: -2px 0 6px;
 }
 
 .form-group input,
@@ -1053,6 +1123,10 @@ body {
     .filter-bar {
         flex-direction: column;
         align-items: stretch;
+    }
+
+    .clothes-grid {
+        grid-template-columns: 1fr 1fr;
     }
 }
 
