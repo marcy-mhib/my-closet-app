@@ -21,12 +21,16 @@ Flask + SQLite で構築し、天気に応じたコーデ提案には Anthropic 
 |---|---|
 | ![ログイン画面](docs/screenshots/login.png) | ![整理チェック画面](docs/screenshots/rarely_worn.png) |
 
+| コーディネート一覧 | 天気（県内主要都市） |
+|---|---|
+| ![コーディネート一覧画面](docs/screenshots/coordinates.png) | ![天気画面](docs/screenshots/weather.png) |
+
 ## 使用技術
 
 - **Backend**: Python / Flask / Flask-SQLAlchemy / Flask-Login / Flask-WTF（CSRF対策）
 - **DB**: SQLite
 - **AI**: Anthropic Claude API（画像認識・コーデ提案）
-- **外部API**: 気象庁アメダス（天気取得）
+- **外部API**: Open-Meteo（天気取得。気象庁の予報モデルも利用）
 - **Frontend**: Jinja2 テンプレート / Vanilla CSS・JavaScript（ビルドツールなし）
 
 ## セキュリティ面での工夫
@@ -52,7 +56,7 @@ FLASK_DEBUG=True
 ANTHROPIC_API_KEY=（任意。AI機能を使う場合のみ）
 ```
 
-天気機能は気象庁アメダスの公開データを使用しており、APIキーは不要です。
+天気機能はOpen-Meteoの無料APIを使用しており、APIキーは不要です。
 
 ```bash
 python app.py

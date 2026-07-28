@@ -22,6 +22,13 @@
                     {% endif %}
                 </div>
             </div>
+            <div class="neglected-thumb">
+                {% if item.images %}
+                <img src="{{ url_for('static', filename=item.images[0].thumbnail_path) }}" alt="{{ item.name }}">
+                {% else %}
+                <span class="no-image">👕</span>
+                {% endif %}
+            </div>
         </div>
         {% endfor %}
     </div>

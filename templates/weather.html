@@ -23,10 +23,15 @@
     </form>
 
     {% if city_weather %}
-    <div class="pref-map-label">県内の主要都市</div>
-    <div class="pref-map">
+    <div class="pref-map-label">県内の主要都市（イラストはおおまかな位置関係の目安です）</div>
+    <div class="pref-map" {% if prefecture_shape %}style="aspect-ratio:{{ prefecture_shape.aspect }};"{% endif %}>
+        {% if prefecture_shape %}
+        <svg class="pref-map-shape" viewBox="{{ prefecture_shape.viewbox }}" preserveAspectRatio="none">
+            <path d="{{ prefecture_shape.path }}" />
+        </svg>
+        {% endif %}
         {% for spot in city_weather %}
-        <div class="pref-city pref-pos-{{ spot.pos }}">
+        <div class="pref-city" style="left:{{ spot.left }}%; top:{{ spot.top }}%;">
             <div class="pref-city-name">{{ spot.name }}</div>
             <div class="pref-city-temp">{% if spot.temp is not none %}{{ spot.temp }}℃{% else %}--℃{% endif %}</div>
             <div class="pref-city-desc">{{ spot.description }}</div>
