@@ -1367,7 +1367,8 @@ body {
 .mobile-screen {
     display: flex;
     flex-direction: column;
-    height: calc(100vh - 57px);  /* 57px = ヘッダーの高さ */
+    flex: 1;
+    min-height: 0;
     background: var(--paper);
     overflow: hidden;
 }
@@ -1440,24 +1441,24 @@ body {
     min-height: 40px;
 }
 
-/* 服の一覧は3列。1枚あたりが小さくなるので、余白と文字も詰める */
-.mobile-grid-3 {
+/* 服の一覧は2列。PC版より1枚が小さいので、余白と文字は詰めておく */
+.mobile-grid-2 {
     grid-template-columns: repeat(3, 1fr);
     padding: 10px;
     gap: 8px;
     overflow: visible;
 }
 
-.mobile-grid-3 .clothes-card {
+.mobile-grid-2 .clothes-card {
     padding: 7px;
     border-width: 1px;
 }
 
-.mobile-grid-3 .clothes-card::before {
-    display: none;  /* 3列だと窮屈なのでリベットは省く */
+.mobile-grid-2 .clothes-card::before {
+    display: none;  /* 一覧を詰めたいのでリベット装飾は省く */
 }
 
-.mobile-grid-3 .clothes-name {
+.mobile-grid-2 .clothes-name {
     font-size: 11px;
     margin-bottom: 4px;
     display: block;
@@ -1466,30 +1467,30 @@ body {
     white-space: nowrap;
 }
 
-.mobile-grid-3 .card-actions {
+.mobile-grid-2 .card-actions {
     display: flex;
     justify-content: space-between;
     margin-bottom: 4px;
 }
 
-.mobile-grid-3 .wear-row {
+.mobile-grid-2 .wear-row {
     flex-direction: column;
     align-items: stretch;
     gap: 3px;
 }
 
-.mobile-grid-3 .wear-btn {
+.mobile-grid-2 .wear-btn {
     width: 100%;
     font-size: 11px;
     padding: 5px 0;
 }
 
-.mobile-grid-3 .wear-info {
+.mobile-grid-2 .wear-info {
     font-size: 10px;
     text-align: center;
 }
 
-.mobile-grid-3 .recommend-badge {
+.mobile-grid-2 .recommend-badge {
     font-size: 11px;
     padding: 1px 4px;
 }
@@ -1521,4 +1522,84 @@ body {
 
 .mobile-coordinates .empty-state {
     grid-column: 1 / -1;
+}
+
+/* --- スマホ版の画面全体の縦配分 --- */
+/* 一覧に画面の2/3以上を回したいので、上に積み上がる固定部分(ヘッダー・天気バー・
+   見出し・絞り込み)をまとめて詰める。bodyをflexにしておくことで、
+   .mobile-screen が「残り全部」を受け取れる(ヘッダーの高さを数値で書かなくて済む)。 */
+.mobile-view {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    min-height: 100dvh;  /* アドレスバーの伸縮に追従する単位。非対応ブラウザは上の100vhを使う */
+}
+
+.mobile-view .header {
+    padding: 6px 12px;
+    flex-shrink: 0;
+}
+
+.mobile-view .logo {
+    font-size: 15px;
+    gap: 5px;
+}
+
+/* 現在地が一目で分かるよう、スマホでは枠線だけでなく塗りでも区別する */
+.mobile-view .nav {
+    gap: 5px;
+}
+
+.mobile-view .nav a {
+    padding: 6px 11px;
+    font-size: 12px;
+    font-weight: 600;
+    background: var(--indigo-tint);
+    border-color: var(--indigo);
+    color: var(--indigo);
+}
+
+.mobile-view .nav a.active {
+    background: var(--indigo);
+    color: var(--paper);
+}
+
+.mobile-view .nav-user {
+    display: none;  /* 幅が足りないので省略(ログアウトボタンは残す) */
+}
+
+.mobile-view .nav-logout {
+    padding: 6px 10px;
+    font-size: 12px;
+}
+
+.mobile-screen .mobile-topbar {
+    padding: 7px 12px;
+}
+
+.mobile-screen .section-header {
+    padding: 8px 12px;
+}
+
+/* 絞り込みは縦積みだと画面の1/3を占めてしまうので、2段のグリッドに収める。
+   1段目: 検索 + 絞り込むボタン / 2段目: カテゴリ・季節・色 */
+.mobile-screen .filter-bar {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 6px;
+    padding: 8px 12px;
+}
+
+.mobile-screen .filter-bar input[name="q"] {
+    grid-column: 1 / 3;
+}
+
+.mobile-screen .filter-bar .filter-btn {
+    grid-column: 3;
+    padding: 0 8px;
+}
+
+.mobile-screen .filter-clear {
+    grid-column: 1 / -1;
+    text-align: center;
 }

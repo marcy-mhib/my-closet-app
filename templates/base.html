@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     {% block extra_head %}{% endblock %}
 </head>
-<body>
+<body class="{{ template_folder }}-view">
 
 {# 端末に応じて pc/_header.html か mobile/_header.html を読み込む。
    template_folder は app.py のコンテキストプロセッサが全テンプレートに渡している。

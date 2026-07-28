@@ -42,7 +42,7 @@
 
     {# ここだけがスクロールする領域 #}
     <div class="mobile-scroll">
-        <div class="clothes-grid mobile-grid-3">
+        <div class="clothes-grid mobile-grid-2">
             {% if clothes %}
                 {% for item in clothes %}
                 <div class="clothes-card {{ 'recommended' if item.id in recommended_ids else '' }}">
