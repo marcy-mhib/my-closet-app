@@ -876,8 +876,10 @@ body {
     width: 100%;
     max-width: 250px;
     /* 中央列を全カテゴリ並べたときの高さ(48+26+120+120+42)＋余白ぶんで固定する。
-       アイテム数の少ないコーデでも縦幅が変わらないので、一覧のカードがガタつかない。 */
-    height: 372px;
+       アイテム数の少ないコーデでも縦幅が変わらないので、一覧のカードがガタつかない。
+       --flat-scale を変えると全体が同じ比率で縮む(スマホ版で小さくするために使う)。 */
+    --flat-scale: 1;
+    height: calc(372px * var(--flat-scale));
     overflow: hidden;
     margin: 0 auto 10px;
     padding: 8px;
@@ -921,15 +923,15 @@ body {
 .slot-bottoms img,
 .slot-outer img {
     width: 100%;
-    max-height: 120px;
+    max-height: calc(120px * var(--flat-scale));
 }
 
 /* 帽子・サングラス・シューズ・小物は実物の大きさに近づけて小さめに置く */
-.slot-hat img { width: 44%; max-height: 48px; }
-.slot-sunglasses img { width: 30%; max-height: 26px; }
-.slot-shoes img { width: 58%; max-height: 42px; }
-.slot-accessory img { width: 58%; max-height: 34px; }
-.slot-bag img { width: 100%; max-height: 62px; }
+.slot-hat img { width: 44%; max-height: calc(48px * var(--flat-scale)); }
+.slot-sunglasses img { width: 30%; max-height: calc(26px * var(--flat-scale)); }
+.slot-shoes img { width: 58%; max-height: calc(42px * var(--flat-scale)); }
+.slot-accessory img { width: 58%; max-height: calc(34px * var(--flat-scale)); }
+.slot-bag img { width: 100%; max-height: calc(62px * var(--flat-scale)); }
 
 .coordinate-thumb .no-image {
     height: 80px;
@@ -1289,15 +1291,9 @@ body {
     font-size: 15px;
 }
 
-/* 「カメラで撮影」「アルバムから選ぶ」の2つのボタン。
-   labelでinputを包んでいるので、ボタンのどこを押してもファイル選択が開く */
-.file-buttons {
-    display: flex;
-    gap: 10px;
-}
-
+/* 画像選択ボタン。labelでinputを包んでいるので、ボタンのどこを押しても選択画面が開く */
 .file-button {
-    flex: 1;
+    width: 100%;
     min-height: 60px;
     display: flex;
     align-items: center;
@@ -1363,4 +1359,166 @@ body {
     font-size: 15px;
     top: -8px;
     right: -8px;
+}
+
+/* --- スマホ用の一覧画面 --- */
+/* 画面の高さいっぱいを使い、上部(天気・見出し・絞り込み)は固定して一覧だけをスクロールさせる。
+   ページ全体が縦に伸びないので、絞り込み条件を変えるのに先頭まで戻る必要がない。 */
+.mobile-screen {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 57px);  /* 57px = ヘッダーの高さ */
+    background: var(--paper);
+    overflow: hidden;
+}
+
+.mobile-screen .section-header,
+.mobile-screen .filter-bar {
+    flex-shrink: 0;
+}
+
+/* ここだけがスクロールする。-webkit-overflow-scrolling はiOSの慣性スクロール用 */
+.mobile-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* 上部の天気とショートカット。1行に収めて固定領域の高さを抑える */
+.mobile-topbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--thread);
+    flex-shrink: 0;
+}
+
+.mobile-weather {
+    flex: 1;
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    min-width: 0;
+    text-decoration: none;
+    color: var(--ink);
+}
+
+.mobile-weather-temp {
+    font-family: var(--font-mono);
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.mobile-weather-desc {
+    font-size: 12px;
+    color: var(--ink-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.mobile-chip {
+    border: 1px solid var(--thread);
+    border-radius: 999px;
+    padding: 7px 12px;
+    font-size: 12px;
+    color: var(--ink-muted);
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.mobile-screen .filter-bar {
+    padding: 10px 12px;
+    gap: 6px;
+}
+
+.mobile-screen .filter-bar input,
+.mobile-screen .filter-bar select {
+    font-size: 16px;  /* 16px未満だとiOS Safariが入力時に画面を拡大してしまう */
+    min-height: 40px;
+}
+
+/* 服の一覧は3列。1枚あたりが小さくなるので、余白と文字も詰める */
+.mobile-grid-3 {
+    grid-template-columns: repeat(3, 1fr);
+    padding: 10px;
+    gap: 8px;
+    overflow: visible;
+}
+
+.mobile-grid-3 .clothes-card {
+    padding: 7px;
+    border-width: 1px;
+}
+
+.mobile-grid-3 .clothes-card::before {
+    display: none;  /* 3列だと窮屈なのでリベットは省く */
+}
+
+.mobile-grid-3 .clothes-name {
+    font-size: 11px;
+    margin-bottom: 4px;
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.mobile-grid-3 .card-actions {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 4px;
+}
+
+.mobile-grid-3 .wear-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 3px;
+}
+
+.mobile-grid-3 .wear-btn {
+    width: 100%;
+    font-size: 11px;
+    padding: 5px 0;
+}
+
+.mobile-grid-3 .wear-info {
+    font-size: 10px;
+    text-align: center;
+}
+
+.mobile-grid-3 .recommend-badge {
+    font-size: 11px;
+    padding: 1px 4px;
+}
+
+/* コーデ一覧は2列。フラットレイは--flat-scaleでまとめて縮める */
+.mobile-coordinates .coordinate-list {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    padding: 10px;
+}
+
+.mobile-coordinates .coordinate-thumbs {
+    --flat-scale: 0.55;
+    max-width: 100%;
+    padding: 5px;
+}
+
+.mobile-coordinates .coordinate-card {
+    padding: 10px;
+}
+
+.mobile-coordinates .coordinate-card::before {
+    display: none;
+}
+
+.mobile-coordinates .coordinate-name {
+    font-size: 13px;
+}
+
+.mobile-coordinates .empty-state {
+    grid-column: 1 / -1;
 }

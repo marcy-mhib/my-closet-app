@@ -14,18 +14,12 @@
         <div class="form-group">
             <label>写真</label>
             <p class="field-hint">背景とアイテムの色が違う写真だと、コーデ一覧で背景を自動的に切り抜きやすくなります</p>
-            <div class="file-buttons">
-                {# capture を付けたinputはカメラが直接起動する。ただしアルバムから選べなくなる
-                   端末があるため、アルバム用のinput(captureなし)を別に用意している #}
-                <label class="file-button">
-                    📷 カメラで撮影
-                    <input type="file" name="images" class="image-input" accept="image/*" capture="environment">
-                </label>
-                <label class="file-button">
-                    🖼 アルバムから選ぶ
-                    <input type="file" name="images" class="image-input" accept="image/*" multiple>
-                </label>
-            </div>
+            {# captureを付けないinputなら、端末の選択画面に「写真を撮る」も
+               「アルバムから選ぶ」も両方出るので、ボタンは1つで足りる #}
+            <label class="file-button">
+                📷 画像選択
+                <input type="file" name="images" class="image-input" accept="image/*" multiple>
+            </label>
             <div id="image-preview" class="image-preview"></div>
             <span id="color-status" class="ai-status"></span>
             {% if ai_enabled %}

@@ -1,0 +1,69 @@
+{# コーデ一覧のカード部分。見出し・絞り込み・スクロール領域といった外枠はPC版とスマホ版で
+   作りが違うので、共通化しているのはカードの中身だけ。両方からこのファイルを読み込む。 #}
+{% if coordinates %}
+{# アウターはトップスの左、バッグは右、アクセサリーはバッグの上…と、実際に着る位置関係に
+   近づけてサムネイルを配置する(コーデ全体を俯瞰する「フラットレイ」風のレイアウト)。
+   帽子→トップス→ボトムス→シューズは縦に隙間なく並べたいので、無いカテゴリの枠が
+   残らないよう「存在するものだけ」を出力し、行の高さはCSS側でautoにしている。 #}
+{% macro thumb(item, slot_class) %}
+{% if item %}
+<div class="coordinate-thumb {{ slot_class }}">
+    {% if item.images %}
+    <img src="{{ url_for('static', filename=item.images[0].thumbnail_path) }}" alt="{{ item.name }}">
+    {% else %}
+    <span class="no-image">👕</span>
+    {% endif %}
+</div>
+{% endif %}
+{% endmacro %}
+<div class="coordinate-list">
+    {% for c in coordinates %}
+    <div class="coordinate-card">
+        {% set items_by_category = coord_thumbs.get(c.id, {}) %}
+        <div class="coordinate-thumbs">
+            <div class="flat-outer">{{ thumb(items_by_category.get('アウター'), 'slot-outer') }}</div>
+            {# 中央列は1つのまとまりにしておく。左右の列の高さに引っ張られなくなるので、
+               帽子→トップス→ボトムス→シューズが必ず隙間なく縦に並ぶ #}
+            <div class="flat-center">
+                {{ thumb(items_by_category.get('帽子'), 'slot-hat') }}
+                {{ thumb(items_by_category.get('サングラス'), 'slot-sunglasses') }}
+                {{ thumb(items_by_category.get('トップス'), 'slot-tops') }}
+                {{ thumb(items_by_category.get('ボトムス'), 'slot-bottoms') }}
+                {{ thumb(items_by_category.get('シューズ'), 'slot-shoes') }}
+                {% if not items_by_category %}
+                <div class="coordinate-thumb slot-tops"><span class="no-image">👕</span></div>
+                {% endif %}
+            </div>
+            {# アクセサリーはバッグの真上に重ねたいので、右列も縦積みにする #}
+            <div class="flat-side">
+                {{ thumb(items_by_category.get('アクセサリー'), 'slot-accessory') }}
+                {{ thumb(items_by_category.get('バッグ'), 'slot-bag') }}
+            </div>
+        </div>
+        <div class="coordinate-name">{{ c.name }}</div>
+        <div class="coordinate-tags">
+            {% for item in c.items %}
+            <span class="tag">{{ item.name }}</span>
+            {% else %}
+            <span class="tag">アイテム未設定</span>
+            {% endfor %}
+        </div>
+        <div class="coordinate-card-actions">
+            <a href="/coordinates/{{ c.id }}/edit" class="edit-btn" title="編集" aria-label="{{ c.name }}を編集">✏️ 編集</a>
+            <form method="POST" action="{{ url_for('delete_coordinate', id=c.id) }}" class="inline-form" onsubmit="return confirmDelete(this, 'このコーディネートを削除しますか？')">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="icon-btn delete-btn" title="削除" aria-label="{{ c.name }}を削除">🗑 削除</button>
+            </form>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    {% if filters.q or filters.category or filters.color or filters.season %}
+    条件に一致するコーディネートが見つかりませんでした。
+    {% else %}
+    まだコーディネートが登録されていません。
+    {% endif %}
+</div>
+{% endif %}

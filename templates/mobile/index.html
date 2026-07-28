@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+{% block title %}クロークノート{% endblock %}
+{% block content %}
+{# スマホ用のクローゼット。PC版の左右2カラムをやめ、画面いっぱいの1カラムにしている。
+   上部(天気・絞り込み)は固定し、服の一覧だけがスクロールするので、
+   絞り込み条件を変えるためにページ先頭まで戻る必要がない。 #}
+<div class="mobile-screen">
+    <div class="mobile-topbar">
+        <a href="/weather" class="mobile-weather">
+            <span class="mobile-weather-temp">{% if temp is not none %}{{ temp }}℃{% else %}--℃{% endif %}</span>
+            <span class="mobile-weather-desc">{{ description }}・{{ city }}</span>
+        </a>
+        <a href="/suggest" class="mobile-chip">✨ AI提案</a>
+        <a href="/rarely_worn" class="mobile-chip">📦 整理</a>
+    </div>
+
+    <div class="section-header">
+        <span class="section-title">登録済みの服</span>
+        <a href="/add" class="add-btn">＋ 服を追加</a>
+    </div>
+
+    <form method="GET" action="/" class="filter-bar">
+        <input type="text" name="q" placeholder="服の名前で検索" value="{{ filters.q }}">
+        <select name="category">
+            <option value="">すべてのカテゴリ</option>
+            {% for cat in categories %}
+            <option value="{{ cat }}" {% if filters.category == cat %}selected{% endif %}>{{ cat }}</option>
+            {% endfor %}
+        </select>
+        <select name="season">
+            <option value="">すべての季節</option>
+            {% for s in seasons %}
+            <option value="{{ s }}" {% if filters.season == s %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+        </select>
+        <input type="text" name="color" placeholder="色" value="{{ filters.color }}">
+        <button type="submit" class="filter-btn">絞り込む</button>
+        {% if filters.q or filters.category or filters.color or filters.season %}
+        <a href="/" class="filter-clear">条件をクリア</a>
+        {% endif %}
+    </form>
+
+    {# ここだけがスクロールする領域 #}
+    <div class="mobile-scroll">
+        <div class="clothes-grid mobile-grid-3">
+            {% if clothes %}
+                {% for item in clothes %}
+                <div class="clothes-card {{ 'recommended' if item.id in recommended_ids else '' }}">
+                    <div class="clothes-img-slider">
+                        {% if item.images %}
+                            {% for img in item.images %}
+                            <img src="{{ url_for('static', filename=img.image_path) }}" alt="{{ item.name }}">
+                            {% endfor %}
+                        {% else %}
+                            <span class="no-image">👕</span>
+                        {% endif %}
+                    </div>
+                    {% if item.id in recommended_ids %}
+                    <span class="recommend-badge">🌡️</span>
+                    {% endif %}
+                    <div class="clothes-name">
+                        {{ item.name }}
+                    </div>
+                    <div class="card-actions">
+                        <form method="POST" action="{{ url_for('toggle_favorite', id=item.id) }}" class="inline-form">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="icon-btn favorite-btn {{ 'active' if item.is_favorite else '' }}" aria-label="{{ 'お気に入りから外す' if item.is_favorite else 'お気に入りに追加' }}">{{ '★' if item.is_favorite else '☆' }}</button>
+                        </form>
+                        <a href="/edit/{{ item.id }}" class="edit-btn" aria-label="{{ item.name }}を編集">✏️</a>
+                        <form method="POST" action="{{ url_for('delete', id=item.id) }}" class="inline-form" onsubmit="return confirmDelete(this, 'この服を削除しますか？')">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="icon-btn delete-btn" aria-label="{{ item.name }}を削除">🗑</button>
+                        </form>
+                    </div>
+                    <div class="wear-row">
+                        {% if item.last_worn_at == today %}
+                        <form method="POST" action="{{ url_for('unwear', id=item.id) }}" class="inline-form">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="wear-btn wear-btn-undo">取り消す</button>
+                        </form>
+                        {% else %}
+                        <form method="POST" action="{{ url_for('wear', id=item.id) }}" class="inline-form">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="wear-btn">今日着た</button>
+                        </form>
+                        {% endif %}
+                        <span class="wear-info">{{ item.wear_count }}回</span>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state">
+                    {% if filters.q or filters.category or filters.color or filters.season %}
+                        条件に一致する服が見つかりませんでした。
+                    {% else %}
+                        まだ服が登録されていません。<br>「服を追加」から登録してみましょう！
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

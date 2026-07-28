@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% block title %}コーディネート一覧{% endblock %}
+{% block content %}
+{# スマホ用のコーデ一覧。見出しと絞り込みを画面上部に固定し、カードの並びだけがスクロールする。
+   カードの中身はPC版と共通(_coordinate_cards.html)で、違うのは外枠と列数・サムネイルの縮尺。 #}
+<div class="mobile-screen mobile-coordinates">
+    <div class="section-header">
+        <span class="section-title">コーディネート一覧</span>
+        <div class="header-actions">
+            <a href="/coordinates/new" class="add-btn">＋ 作成</a>
+            <a href="/" class="header-back-btn">← 戻る</a>
+        </div>
+    </div>
+
+    <form method="GET" action="/coordinates" class="filter-bar">
+        <input type="text" name="q" placeholder="コーデ名・アイテム名で検索" value="{{ filters.q }}">
+        <select name="category">
+            <option value="">すべてのカテゴリ</option>
+            {% for cat in categories %}
+            <option value="{{ cat }}" {% if filters.category == cat %}selected{% endif %}>{{ cat }}</option>
+            {% endfor %}
+        </select>
+        <select name="season">
+            <option value="">すべての季節</option>
+            {% for s in seasons %}
+            <option value="{{ s }}" {% if filters.season == s %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+        </select>
+        <input type="text" name="color" placeholder="色" value="{{ filters.color }}">
+        <button type="submit" class="filter-btn">絞り込む</button>
+        {% if filters.q or filters.category or filters.color or filters.season %}
+        <a href="/coordinates" class="filter-clear">条件をクリア</a>
+        {% endif %}
+    </form>
+
+    {# ここだけがスクロールする領域 #}
+    <div class="mobile-scroll">
+        {% include '_coordinate_cards.html' %}
+    </div>
+</div>
+{% endblock %}

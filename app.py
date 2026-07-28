@@ -850,7 +850,7 @@ def index():
         c.id for c in clothes if set(seasons_from_string(c.season)) & suitable_seasons
     }
     return render_template(
-        'index.html',
+        f'{get_template_folder()}/index.html',
         clothes=clothes,
         temp=temp,
         description=description,
@@ -1042,7 +1042,7 @@ def coordinates():
         coord_thumbs[c.id] = by_category
 
     return render_template(
-        'coordinates.html', coordinates=coords, coord_thumbs=coord_thumbs,
+        f'{get_template_folder()}/coordinates.html', coordinates=coords, coord_thumbs=coord_thumbs,
         categories=CATEGORIES, seasons=SEASONS,
         filters={'q': q, 'category': category, 'color': color, 'season': season},
     )
