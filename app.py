@@ -29,7 +29,7 @@ from flask_login import (
 )
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf import CSRFProtect
-from PIL import Image, ImageFilter
+from PIL import Image, ImageChops, ImageFilter
 from sqlalchemy import text
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
@@ -223,11 +223,16 @@ class ClothesImage(db.Model):
     image_path = db.Column(db.String(200), nullable=False)
     # 背景を透過した切り抜き画像。無地の背景でないなど生成に失敗した場合はNoneのまま
     cutout_path = db.Column(db.String(200))
+    # アイテムの周りの余白を切り落としたサムネイル。コーデ一覧で縦に隙間なく積むために使う
+    thumb_path = db.Column(db.String(200))
 
     @property
     def thumbnail_path(self):
-        """コーデ一覧など背景を揃えて見せたい場面で使う画像パス(切り抜きが無ければ元画像)。"""
-        return self.cutout_path or self.image_path
+        """コーデ一覧など背景を揃えて見せたい場面で使う画像パス。
+
+        余白を落としたサムネイル → 切り抜き → 元画像 の順に、あるものを使う。
+        """
+        return self.thumb_path or self.cutout_path or self.image_path
 
 
 class Coordinate(db.Model):
@@ -269,7 +274,26 @@ def run_migrations():
         existing_image_cols = {row[1] for row in conn.execute(text('PRAGMA table_info(clothes_image)'))}
         if 'cutout_path' not in existing_image_cols:
             conn.execute(text('ALTER TABLE clothes_image ADD COLUMN cutout_path VARCHAR(200)'))
+        if 'thumb_path' not in existing_image_cols:
+            conn.execute(text('ALTER TABLE clothes_image ADD COLUMN thumb_path VARCHAR(200)'))
         conn.commit()
+
+
+def backfill_thumbnails():
+    """thumb_pathがまだ無い画像に、余白を落としたサムネイルをまとめて作る。
+
+    サムネイル導入より前に登録された画像を追いつかせるための処理で、
+    一度作れば以降はスキップされる(作れなかった画像は元画像のまま表示される)。
+    """
+    pending = ClothesImage.query.filter(ClothesImage.thumb_path.is_(None)).all()
+    for record in pending:
+        source = os.path.join(app.root_path, 'static', record.cutout_path or record.image_path)
+        thumb_name = f'{uuid.uuid4().hex}_thumb.png'
+        if os.path.exists(source) and build_flat_thumbnail(
+                source, os.path.join(app.config['UPLOAD_FOLDER'], thumb_name)):
+            record.thumb_path = f'uploads/{thumb_name}'
+    if pending:
+        db.session.commit()
 
 
 with app.app_context():
@@ -305,9 +329,72 @@ def save_clothes_image(image, clothes_id):
     if generate_cutout(image_bytes, os.path.join(app.config['UPLOAD_FOLDER'], cutout_name)):
         cutout_path = f'uploads/{cutout_name}'
 
+    # コーデ一覧用に、アイテムの周りの余白を落としたサムネイルも作っておく。
+    # 切り抜きに成功していればそれを、失敗していれば元画像を切り出しの元にする。
+    thumb_path = None
+    thumb_name = f'{uuid.uuid4().hex}_thumb.png'
+    thumb_source = os.path.join(app.config['UPLOAD_FOLDER'], cutout_name) if cutout_path else image_path_abs
+    if build_flat_thumbnail(thumb_source, os.path.join(app.config['UPLOAD_FOLDER'], thumb_name)):
+        thumb_path = f'uploads/{thumb_name}'
+
     return ClothesImage(
-        clothes_id=clothes_id, image_path=f'uploads/{unique_name}', cutout_path=cutout_path,
+        clothes_id=clothes_id, image_path=f'uploads/{unique_name}',
+        cutout_path=cutout_path, thumb_path=thumb_path,
     )
+
+
+# サムネイル切り出しで「背景と違う色」と判定する明るさの差(0-255)。小さいほど薄い影まで拾う。
+THUMB_EDGE_THRESHOLD = 26
+THUMB_MARGIN_RATIO = 0.02  # 切り出し後に残すわずかな余白(短辺に対する割合)
+THUMB_MAX_SIZE = 480  # サムネイルの一辺の最大px数(コーデ一覧では小さくしか使わないので縮めて保存する)
+
+
+def build_flat_thumbnail(source_path_abs, out_path_abs):
+    """アイテムの周りの余白を切り落としたサムネイルPNGを保存する(できなければFalse)。
+
+    コーデ一覧ではアイテムを縦に隙間なく積むので、写真に写り込んだ床や壁の余白が残っていると
+    アイテム同士が離れて見えてしまう。透過画像なら不透明な部分、透過していない写真なら
+    「外周の色と違う部分」をアイテムとみなし、その外接矩形で切り出す。
+    """
+    try:
+        image = Image.open(source_path_abs)
+        if image.mode in ('RGBA', 'LA'):
+            image = image.convert('RGBA')
+            box = image.getchannel('A').getbbox()  # 完全に透明な縁を落とす
+            scale = 1.0
+        else:
+            image = image.convert('RGB')
+            # 判定は縮小画像で行う(元画像のままだと大きな写真で時間がかかるため)
+            small = image.copy()
+            small.thumbnail((CUTOUT_ANALYSIS_SIZE, CUTOUT_ANALYSIS_SIZE), Image.LANCZOS)
+            width, height = small.size
+            pixels = small.load()
+            border = (
+                [pixels[x, 0] for x in range(width)] + [pixels[x, height - 1] for x in range(width)]
+                + [pixels[0, y] for y in range(height)] + [pixels[width - 1, y] for y in range(height)]
+            )
+            background = tuple(round(sum(p[i] for p in border) / len(border)) for i in range(3))
+            difference = ImageChops.difference(small, Image.new('RGB', small.size, background))
+            mask = difference.convert('L').point(lambda v: 255 if v > THUMB_EDGE_THRESHOLD else 0)
+            box = mask.getbbox()
+            scale = image.width / width
+
+        if box is None:
+            return False
+        left, top, right, bottom = (round(v * scale) for v in box)
+        margin = round(min(image.width, image.height) * THUMB_MARGIN_RATIO)
+        left, top = max(left - margin, 0), max(top - margin, 0)
+        right, bottom = min(right + margin, image.width), min(bottom + margin, image.height)
+        # 判定がうまくいかず画像のほとんどが消える場合は、切り出さず元のまま使う
+        if right - left < image.width * 0.1 or bottom - top < image.height * 0.1:
+            left, top, right, bottom = 0, 0, image.width, image.height
+
+        thumbnail = image.crop((left, top, right, bottom))
+        thumbnail.thumbnail((THUMB_MAX_SIZE, THUMB_MAX_SIZE), Image.LANCZOS)
+        thumbnail.save(out_path_abs, 'PNG')
+        return True
+    except Exception:
+        return False
 
 
 # 背景除去の判定に使う色距離の閾値(RGB空間でのユークリッド距離の2乗)。
@@ -629,6 +716,12 @@ def owned_coordinate_or_404(id):
     if coordinate.user_id != current_user.id:
         abort(404)
     return coordinate
+
+
+# ヘルパーの定数・関数がすべて出そろってから実行する
+# (定義より前に呼ぶとNameErrorになり、例外を握りつぶす作りのため気付かないまま失敗する)
+with app.app_context():
+    backfill_thumbnails()  # サムネイル導入前に登録済みの画像を追いつかせる(一度きり)
 
 
 # ---- 6-1. ルート: 認証(登録・ログイン・ログアウト) ----
