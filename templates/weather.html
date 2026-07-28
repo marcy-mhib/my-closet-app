@@ -23,20 +23,24 @@
     </form>
 
     {% if city_weather %}
-    <div class="pref-map-label">県内の主要都市（イラストはおおまかな位置関係の目安です）</div>
-    <div class="pref-map" {% if prefecture_shape %}style="aspect-ratio:{{ prefecture_shape.aspect }};"{% endif %}>
-        {% if prefecture_shape %}
-        <svg class="pref-map-shape" viewBox="{{ prefecture_shape.viewbox }}" preserveAspectRatio="none">
-            <path d="{{ prefecture_shape.path }}" />
-        </svg>
-        {% endif %}
-        {% for spot in city_weather %}
-        <div class="pref-city" style="left:{{ spot.left }}%; top:{{ spot.top }}%;">
-            <div class="pref-city-name">{{ spot.name }}</div>
-            <div class="pref-city-temp">{% if spot.temp is not none %}{{ spot.temp }}℃{% else %}--℃{% endif %}</div>
-            <div class="pref-city-desc">{{ spot.description }}</div>
+    <div class="pref-map-label">{{ city }}の主要都市（輪郭は実際の県境データを簡略化したもの・離島は省略）</div>
+    <div class="pref-map">
+        {# 輪郭と都市カードは同じ緯度経度の範囲を基準にしているので、枠(--map-aspect)を
+           共有させることで実際の位置関係どおりに重なる #}
+        <div class="pref-map-inner" style="--map-aspect:{{ prefecture_shape.aspect if prefecture_shape else 1 }};">
+            {% if prefecture_shape %}
+            <svg class="pref-map-shape" viewBox="{{ prefecture_shape.viewbox }}">
+                <path d="{{ prefecture_shape.path }}" vector-effect="non-scaling-stroke" />
+            </svg>
+            {% endif %}
+            {% for spot in city_weather %}
+            <div class="pref-city" style="left:{{ spot.left }}%; top:{{ spot.top }}%;">
+                <div class="pref-city-name">{{ spot.name }}</div>
+                <div class="pref-city-temp">{% if spot.temp is not none %}{{ spot.temp }}℃{% else %}--℃{% endif %}</div>
+                <div class="pref-city-desc">{{ spot.description }}</div>
+            </div>
+            {% endfor %}
         </div>
-        {% endfor %}
     </div>
     {% endif %}
 </div>

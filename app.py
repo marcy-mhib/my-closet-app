@@ -13,11 +13,13 @@
 import base64
 import io
 import json
+import math
 import os
 import time
 import uuid
-from collections import deque
+from collections import Counter, deque
 from datetime import date, datetime
+from itertools import combinations
 
 import requests
 from dotenv import load_dotenv
@@ -87,90 +89,70 @@ CITY_COORDINATES = {
     '福岡': (33.58, 130.38), '佐賀': (33.27, 130.31), '長崎': (32.73, 129.87), '熊本': (32.81, 130.71),
     '大分': (33.23, 131.62), '宮崎': (31.94, 131.41), '鹿児島': (31.55, 130.55),
     '沖縄': (26.21, 127.69), '那覇': (26.21, 127.69),
-    # 天気ページのコンパス配置で使う、都道府県庁所在地以外の市区町村
-    '北九州市': (33.85, 130.74),  # 八幡地点で代用
-    '久留米市': (33.30, 130.49), '大牟田市': (33.01, 130.47), '飯塚市': (33.65, 130.69),
-    '福山市': (34.45, 133.25), '呉市': (34.24, 132.55), '三次市': (34.81, 132.85),
-    '高槻市': (34.86, 135.56),  # 茨木地点で代用
-    '東大阪市': (34.68, 135.60),  # 大阪の少し東(実際の位置関係に合わせて座標を調整)
-    '堺市': (34.55, 135.49),
-    '岸和田市': (34.46, 135.37),  # 堺の少し南西(実際の位置関係に合わせて座標を調整)
-    '青梅市': (35.79, 139.31),
-    '立川市': (35.68, 139.48),  # 府中地点で代用
-    '八王子市': (35.67, 139.32),
-    '町田市': (35.54, 139.45),  # 八王子の少し南東(実際の位置関係に合わせて座標を調整)
+    # 天気ページの県内マップで使う、都道府県庁所在地以外の市区町村。
+    # Open-Meteoは観測地点ではなく格子データなので、代用地点ではなく市役所のある実際の座標を使う
+    # (マップ上の位置計算にもこの座標をそのまま使うため、実際の位置関係とずれない)。
+    '北九州市': (33.88, 130.88), '久留米市': (33.32, 130.51),
+    '大牟田市': (33.03, 130.45), '飯塚市': (33.65, 130.69),
+    '福山市': (34.49, 133.36), '呉市': (34.25, 132.57), '三次市': (34.81, 132.85),
+    '高槻市': (34.85, 135.62), '東大阪市': (34.68, 135.60),
+    '堺市': (34.57, 135.48), '岸和田市': (34.46, 135.37),
+    '青梅市': (35.79, 139.28), '立川市': (35.71, 139.41),
+    '八王子市': (35.67, 139.32), '町田市': (35.55, 139.44),
 }
 JAPAN_ADMIN_SUFFIXES = ('都', '道', '府', '県', '市')
 
-# 天気ページでニュース番組風に「県内の主要都市の気温」を並べる県だけ、対象都市を列挙する。
-# 表示位置は緯度経度(CITY_COORDINATES)から実行時に計算するので、ここでは並べる都市名だけ持つ。
-# 対応していない都道府県では、今まで通り単一都市の表示にフォールバックする。
-PREFECTURE_CITY_LAYOUT = {
-    '福岡': [
-        {'name': '北九州市'}, {'name': '福岡市'}, {'name': '飯塚市'},
-        {'name': '久留米市'}, {'name': '大牟田市'},
-    ],
-    '広島': [
-        {'name': '三次市'}, {'name': '広島市'}, {'name': '福山市'}, {'name': '呉市'},
-    ],
-    '大阪': [
-        {'name': '高槻市'}, {'name': '大阪市'}, {'name': '東大阪市'},
-        {'name': '堺市'}, {'name': '岸和田市'},
-    ],
-    '東京': [
-        {'name': '青梅市'}, {'name': '立川市'}, {'name': '東京(23区)', 'lookup': '東京'},
-        {'name': '八王子市'}, {'name': '町田市'},
-    ],
-}
+# 天気ページの県内マップ用データ(県の輪郭と、そこに並べる主要都市5つ)。
+# tools/build_prefecture_data.py が生成したJSONを起動時に一度だけ読み込む。
+#   輪郭: 国土数値情報(国土交通省)由来の行政区域データを、1県90点まで簡略化した(緯度, 経度)の列
+#   都市: 県庁所在地を起点に、県内へまんべんなく散るよう選んだ5市(緯度経度つき)
+# どちらも離島は除いてある(形が読み取りにくくなるため)。
+PREFECTURE_DATA_PATH = os.path.join(app.root_path, 'static', 'data', 'prefectures.json')
+with open(PREFECTURE_DATA_PATH, encoding='utf-8') as _prefecture_file:
+    PREFECTURE_DATA = json.load(_prefecture_file)
 
-# 県の実際の境界線データは使わず、大まかな輪郭イメージとして手描き風のシルエットを用意する
-# (楕円をベースにした単純な滑らかブロブ。正確な地図ではなくイラストとしての目安)
-PREFECTURE_SHAPES = {
-    '福岡': {
-        'viewbox': '0 0 100 120',
-        'aspect': '100 / 120',
-        'path': (
-            'M 84.1 60.0 C 85.3 70.0 87.3 84.7 83.7 93.5 C 80.2 102.4 70.1 111.0 62.6 113.1 '
-            'C 55.2 115.2 46.3 109.8 39.1 106.1 C 31.8 102.3 23.7 98.2 19.3 90.5 '
-            'C 14.9 82.8 12.8 70.4 12.5 60.0 C 12.3 49.6 13.8 37.0 18.0 28.1 '
-            'C 22.1 19.2 30.2 8.5 37.3 6.5 C 44.4 4.6 53.8 11.7 60.4 16.2 '
-            'C 67.0 20.7 72.7 26.2 76.7 33.5 C 80.6 40.8 82.9 50.0 84.1 60.0 Z'
-        ),
-    },
-    '広島': {
-        'viewbox': '0 0 160 100',
-        'aspect': '160 / 100',
-        'path': (
-            'M 156.7 50.0 C 157.6 57.2 151.6 67.8 141.9 72.5 C 132.2 77.2 111.8 77.3 98.4 78.3 '
-            'C 85.0 79.3 74.5 79.7 61.4 78.6 C 48.3 77.5 28.8 76.6 19.8 71.9 '
-            'C 10.8 67.1 7.1 57.1 7.5 50.0 C 7.9 42.9 13.6 34.2 22.4 29.1 '
-            'C 31.1 24.0 46.9 21.5 60.1 19.4 C 73.3 17.3 88.9 15.0 101.6 16.7 '
-            'C 114.4 18.4 127.5 23.9 136.7 29.4 C 145.8 35.0 155.8 42.8 156.7 50.0 Z'
-        ),
-    },
-    '大阪': {
-        'viewbox': '0 0 100 120',
-        'aspect': '100 / 120',
-        'path': (
-            'M 81.5 60.0 C 81.9 68.7 81.4 80.3 77.8 87.4 C 74.3 94.4 66.6 99.2 60.1 102.2 '
-            'C 53.7 105.1 45.6 107.4 39.2 105.0 C 32.8 102.7 24.7 95.5 21.5 88.0 '
-            'C 18.3 80.5 19.3 68.6 20.1 60.0 C 20.9 51.4 23.2 44.6 26.2 36.6 '
-            'C 29.3 28.7 32.9 15.0 38.5 12.1 C 44.1 9.2 53.6 15.4 59.8 19.2 '
-            'C 66.0 23.0 71.8 28.2 75.5 35.0 C 79.1 41.8 81.1 51.3 81.5 60.0 Z'
-        ),
-    },
-    '東京': {
-        'viewbox': '0 0 200 90',
-        'aspect': '200 / 90',
-        'path': (
-            'M 183.3 45.0 C 182.9 50.3 174.1 56.1 164.7 60.7 C 155.3 65.3 142.0 71.0 127.0 72.7 '
-            'C 112.0 74.4 90.0 72.8 74.9 70.8 C 59.7 68.7 46.4 64.8 36.0 60.5 '
-            'C 25.6 56.2 15.4 50.9 12.5 45.0 C 9.6 39.1 9.1 30.5 18.7 25.3 '
-            'C 28.2 20.1 51.3 15.9 69.8 14.1 C 88.4 12.2 113.7 11.9 129.9 14.3 '
-            'C 146.1 16.8 158.2 23.6 167.1 28.7 C 176.1 33.8 183.8 39.7 183.3 45.0 Z'
-        ),
-    },
-}
+# 県内マップに出てくる市名も、都市変更フォームから検索できるように登録しておく。
+# 複数の県に同じ市名がある場合はどちらを指すか決められないので、その名前は登録しない。
+_city_name_counts = Counter(city['name'] for pref in PREFECTURE_DATA.values() for city in pref['cities'])
+for _pref in PREFECTURE_DATA.values():
+    for _city in _pref['cities']:
+        if _city_name_counts[_city['name']] == 1:
+            CITY_COORDINATES.setdefault(_city['name'], (_city['lat'], _city['lon']))
+
+# 県内マップのカードが重ならないよう押し広げるときに使う、見た目のサイズの目安(px)。
+# style.css の .pref-city の大きさ・.pref-map-inner の --map-height と揃えておくこと。
+MAP_CARD_WIDTH, MAP_CARD_HEIGHT = 74, 60
+MAP_MAX_WIDTH, MAP_MAX_HEIGHT = 452, 400
+
+
+def build_prefecture_shape(outline):
+    """(緯度, 経度)の多角形を、天気ページのマップ用のSVG情報に変換する。
+
+    都市カードの位置も同じ緯度経度の範囲(bounds)から%で計算するので、
+    輪郭と都市の位置関係が必ず一致する。
+    """
+    lats = [lat for lat, _ in outline]
+    lons = [lon for _, lon in outline]
+    lat_min, lat_max = min(lats), max(lats)
+    lon_min, lon_max = min(lons), max(lons)
+    lat_span, lon_span = lat_max - lat_min, lon_max - lon_min
+    # 経度1度の実距離は高緯度ほど縮むので、cosで補正して実際の県の縦横比に近づける
+    aspect = lon_span * math.cos(math.radians((lat_min + lat_max) / 2)) / lat_span
+    height = 1000.0
+    width = height * aspect
+    points = [
+        f'{(lon - lon_min) / lon_span * width:.1f} {(lat_max - lat) / lat_span * height:.1f}'
+        for lat, lon in outline  # 緯度が高い(北)ほどyが小さい=上になる
+    ]
+    return {
+        'path': 'M ' + ' L '.join(points) + ' Z',
+        'viewbox': f'0 0 {width:.1f} {height:.1f}',
+        'aspect': f'{aspect:.3f}',
+        'bounds': (lat_min, lat_max, lon_min, lon_max),
+    }
+
+
+PREFECTURE_SHAPES = {key: build_prefecture_shape(pref['outline']) for key, pref in PREFECTURE_DATA.items()}
 
 COLOR_PALETTE = {
     '白': (255, 255, 255),
@@ -489,15 +471,18 @@ WEATHER_CACHE_SECONDS = 600
 
 
 def fetch_weather(city):
-    """Open-Meteo(気象庁の予報モデルなどを含む)から今日の気温・天気概況を取得する。
-    失敗時は例外を投げずNone/エラーメッセージを返す。
-    PythonAnywhere無料プランの外部通信ホワイトリストに載っているエンドポイントのみを使用している。
-    """
+    """都市名から今日の気温・天気概況を取得する(対応していない地名ならエラーメッセージを返す)。"""
     coords = resolve_city_coords(city)
     if coords is None:
         return None, '対応していない地域です'
-    lat, lon = coords
+    return fetch_weather_at(*coords)
 
+
+def fetch_weather_at(lat, lon):
+    """Open-Meteo(気象庁の予報モデルなどを含む)から今日の気温・天気概況を緯度経度で取得する。
+    失敗時は例外を投げずNone/エラーメッセージを返す。
+    PythonAnywhere無料プランの外部通信ホワイトリストに載っているエンドポイントのみを使用している。
+    """
     cache_key = (lat, lon)
     now = time.time()
     cached = _weather_cache.get(cache_key)
@@ -528,14 +513,55 @@ def fetch_weather(city):
 
 
 def resolve_prefecture_key(city):
-    """登録都市が対応済みの都道府県なら、PREFECTURE_CITY_LAYOUT/PREFECTURE_SHAPESのキーを返す(非対応ならNone)。"""
+    """登録都市が都道府県名なら、PREFECTURE_DATA/PREFECTURE_SHAPESのキーを返す。
+
+    市区町村名など都道府県名以外が登録されている場合はNoneを返し、
+    呼び出し側は県内マップなしの単一都市表示にフォールバックする。
+    """
     city = (city or '').strip()
-    if city in PREFECTURE_CITY_LAYOUT:
+    if city in PREFECTURE_DATA:
         return city
     for suffix in JAPAN_ADMIN_SUFFIXES:
-        if city.endswith(suffix) and city[:-1] in PREFECTURE_CITY_LAYOUT:
+        if city.endswith(suffix) and city[:-1] in PREFECTURE_DATA:
             return city[:-1]
     return None
+
+
+def spread_out_cards(spots, aspect):
+    """気温カードが重なっている分だけ、少しずつ押し広げて読めるようにする。
+
+    緯度経度どおりの位置を出発点にして、重なっているペアだけを「ずれが小さくて済むほうの軸」に
+    動かすので、県内での位置関係(どちらが北か・東か)は保たれる。
+    """
+    width = min(MAP_MAX_WIDTH, MAP_MAX_HEIGHT * aspect)  # 実際に表示される地図の大きさ(px)
+    min_dx = MAP_CARD_WIDTH / width * 100
+    min_dy = MAP_CARD_HEIGHT / (width / aspect) * 100
+    for _ in range(200):
+        overlapped = False
+        for a, b in combinations(spots, 2):
+            dx, dy = b['left'] - a['left'], b['top'] - a['top']
+            gap_x, gap_y = min_dx - abs(dx), min_dy - abs(dy)
+            if gap_x <= 0 or gap_y <= 0:  # どちらかの軸で離れていれば重なっていない
+                continue
+            overlapped = True
+            if gap_x / min_dx <= gap_y / min_dy:
+                shift = (gap_x / 2 + 0.2) * (1 if dx >= 0 else -1)
+                a['left'] -= shift
+                b['left'] += shift
+            else:
+                shift = (gap_y / 2 + 0.2) * (1 if dy >= 0 else -1)
+                a['top'] -= shift
+                b['top'] += shift
+        # 枠の外へ出ないよう毎回押し戻す。端に貼り付いたカードは動けなくなるが、
+        # そのぶん相手側が押し出され続けるので、狭い県(沖縄など)でも最後には離れる
+        for spot in spots:
+            spot['left'] = min(max(spot['left'], 0), 100)
+            spot['top'] = min(max(spot['top'], 0), 100)
+        if not overlapped:
+            break
+    for spot in spots:
+        spot['left'] = round(spot['left'], 1)
+        spot['top'] = round(spot['top'], 1)
 
 
 def parse_price(raw):
@@ -1075,26 +1101,24 @@ def weather():
     temp, description = fetch_weather(city)
 
     prefecture_key = resolve_prefecture_key(city)
-    layout = PREFECTURE_CITY_LAYOUT.get(prefecture_key)
     city_weather = []
     prefecture_shape = None
-    if layout:
-        prefecture_shape = PREFECTURE_SHAPES.get(prefecture_key)
-        # 各都市の緯度経度から、イラスト上でのだいたいの位置(%)を計算する
-        coords = [resolve_city_coords(item.get('lookup', item['name'])) for item in layout]
-        lats = [c[0] for c in coords]
-        lons = [c[1] for c in coords]
-        lat_span = max(max(lats) - min(lats), 0.05)
-        lon_span = max(max(lons) - min(lons), 0.05)
-        PAD = 18  # イラストの端に寄りすぎないための余白(%)
-        for item, (lat, lon) in zip(layout, coords):
-            left = PAD + (lon - min(lons)) / lon_span * (100 - 2 * PAD)
-            top = PAD + (max(lats) - lat) / lat_span * (100 - 2 * PAD)  # 緯度が高い(北)ほど上
-            city_temp, city_description = fetch_weather(item.get('lookup', item['name']))
+    if prefecture_key:
+        prefecture_shape = PREFECTURE_SHAPES[prefecture_key]
+        # 都市カードは、県の輪郭とまったく同じ緯度経度の範囲を基準に%位置へ変換する。
+        # こうすることで「輪郭のどのあたりの都市か」が実際の地理と一致する。
+        lat_min, lat_max, lon_min, lon_max = prefecture_shape['bounds']
+        lat_span = max(lat_max - lat_min, 0.05)
+        lon_span = max(lon_max - lon_min, 0.05)
+        for item in PREFECTURE_DATA[prefecture_key]['cities']:
+            city_temp, city_description = fetch_weather_at(item['lat'], item['lon'])
             city_weather.append({
-                'name': item['name'], 'left': round(left, 1), 'top': round(top, 1),
+                'name': item['name'],
+                'left': (item['lon'] - lon_min) / lon_span * 100,
+                'top': (lat_max - item['lat']) / lat_span * 100,  # 緯度が高い(北)ほど上
                 'temp': city_temp, 'description': city_description,
             })
+        spread_out_cards(city_weather, float(prefecture_shape['aspect']))
 
     return render_template(
         'weather.html', temp=temp, description=description, city=city,

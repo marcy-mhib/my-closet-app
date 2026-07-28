@@ -13,6 +13,9 @@
     --ai-tint: #EFE6F2;
     --danger: #C2453F;
     --danger-tint: #F6E6E2;
+    /* 天気ページの県マップの陸地。地図らしい落ち着いた緑 */
+    --map-land: #C3D3A5;
+    --map-line: #5C7A46;
     --success: #3F8A5C;
     --success-tint: #E7F1EA;
     --font-display: Georgia, "Times New Roman", serif;
@@ -347,15 +350,26 @@ body {
     margin-bottom: 8px;
 }
 
-/* 県のおおまかな輪郭イラストの上に、緯度経度から計算した位置(%)で都市カードを重ねる */
+/* 県の輪郭SVGの上に、緯度経度から計算した位置(%)で都市カードを重ねる。
+   カードが枠外へはみ出さないよう、外側(.pref-map)にカード半分ぶんの余白を持たせている */
 .pref-map {
-    position: relative;
-    width: 100%;
-    max-height: 420px;
     background: var(--canvas);
     border: 1px solid var(--thread);
     border-radius: 12px;
+    padding: 32px 46px;
     overflow: hidden;
+}
+
+/* 輪郭SVGと都市カードの共通の枠。--map-aspect(県の実際の縦横比)はテンプレート側から渡す */
+.pref-map-inner {
+    /* --map-height と .pref-city の大きさは、カードの重なりをほどく app.py 側の
+       MAP_MAX_HEIGHT / MAP_CARD_WIDTH / MAP_CARD_HEIGHT と揃えておくこと */
+    --map-height: 400px;
+    position: relative;
+    width: 100%;
+    max-width: calc(var(--map-height) * var(--map-aspect));
+    aspect-ratio: var(--map-aspect);
+    margin: 0 auto;
 }
 
 .pref-map-shape {
@@ -363,29 +377,31 @@ body {
     inset: 0;
     width: 100%;
     height: 100%;
+    overflow: visible;
 }
 
 .pref-map-shape path {
-    fill: var(--indigo-tint);
-    stroke: var(--indigo);
+    fill: var(--map-land);
+    stroke: var(--map-line);
     stroke-width: 1.2;
+    stroke-linejoin: round;
 }
 
 .pref-city {
     position: absolute;
     transform: translate(-50%, -50%);
-    width: 84px;
-    background: var(--paper);
+    width: 74px;
+    background: rgba(251, 249, 242, 0.94);
     border: 1px solid var(--thread);
     border-radius: 8px;
-    padding: 6px;
+    padding: 5px 4px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 2px;
+    gap: 1px;
     text-align: center;
-    box-shadow: 0 2px 6px rgba(35, 43, 46, 0.15);
+    box-shadow: 0 2px 6px rgba(35, 43, 46, 0.18);
 }
 
 .pref-city-name {
@@ -811,10 +827,25 @@ body {
     align-items: start;
 }
 
+/* クローゼットの服カード(.clothes-card)と同じ「タグを綴じたカード」の見た目に揃える */
 .coordinate-card {
-    border: 1px solid var(--thread);
+    position: relative;
+    background: var(--canvas);
+    border: 2px dashed var(--thread);
     border-radius: 8px;
     padding: 14px;
+}
+
+.coordinate-card::before {
+    content: "";
+    position: absolute;
+    top: -6px;
+    left: 16px;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--rivet);
+    box-shadow: 0 0 0 2px var(--paper);
 }
 
 .coordinate-name {
@@ -830,25 +861,25 @@ body {
 
 /* サムネイルは「フラットレイ」風に、実際に身につける位置関係に近づけて配置する:
    帽子・サングラスは上段中央、アクセサリーはバッグの真上、
-   アウターはトップスの左、バッグはトップスの右、ボトムス・シューズは下段中央 */
+   アウターはトップスの左、バッグはトップスの右、ボトムス・シューズは下段中央。
+   行の高さは固定せずauto(=中身の高さ)にしてあるので、例えばサングラスが無いコーデでは
+   その行がまるごと潰れ、帽子とトップスがそのまま隣接する(縦方向に余白が残らない)。 */
 .coordinate-thumbs {
     display: grid;
-    grid-template-columns: 1fr 1.3fr 1fr;
-    grid-template-rows: 24px 16px 28px 74px 80px 34px;
+    grid-template-columns: 1fr 1.4fr 1fr;
+    grid-template-rows: auto auto auto auto auto;
     grid-template-areas:
         ".     hat    ."
         ".     sun    ."
-        ".     .      acc"
-        "outer top    bag"
+        "outer top    side"
         ".     bottom ."
         ".     shoes  .";
     gap: 0;
     width: 100%;
-    max-width: 240px;
+    max-width: 250px;
     margin: 0 auto 10px;
-    padding: 6px;
-    border: 1px solid var(--thread);
-    border-radius: 8px;
+    padding: 8px;
+    border-radius: 6px;
     background: var(--paper);
 }
 
@@ -862,14 +893,26 @@ body {
     min-height: 0;
 }
 
-.slot-hat { grid-area: hat; }
-.slot-sunglasses { grid-area: sun; }
-.slot-accessory { grid-area: acc; }
-.slot-outer { grid-area: outer; }
-.slot-tops { grid-area: top; }
-.slot-bag { grid-area: bag; }
-.slot-bottoms { grid-area: bottom; }
-.slot-shoes { grid-area: shoes; }
+/* 中央の縦一列(帽子→サングラス→トップス→ボトムス→シューズ)は、
+   1つ1つの高さだけで行の高さが決まるので、画像同士がぴったり接する */
+.slot-hat { grid-area: hat; height: 32px; }
+.slot-sunglasses { grid-area: sun; height: 18px; }
+.slot-tops { grid-area: top; height: 78px; align-self: start; }
+.slot-bottoms { grid-area: bottom; height: 84px; }
+.slot-shoes { grid-area: shoes; height: 34px; }
+.slot-outer { grid-area: outer; height: 78px; align-self: start; }
+
+/* 右列はアクセサリーとバッグの縦積み。合計をトップスと同じ高さにして行が伸びないようにする */
+.slot-side {
+    grid-area: side;
+    align-self: start;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.thumb-accessory { height: 28px; }
+.thumb-bag { height: 50px; }
 
 .coordinate-thumb img {
     width: 100%;

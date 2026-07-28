@@ -31,36 +31,39 @@
     </form>
     {% if coordinates %}
     {# アウターはトップスの左、バッグは右、アクセサリーはバッグの上…と、実際に着る位置関係に
-       近づけてサムネイルを配置する(コーデ全体を俯瞰する「フラットレイ」風のレイアウト) #}
-    {% set thumb_slots = [
-        ('帽子', 'slot-hat'),
-        ('サングラス', 'slot-sunglasses'),
-        ('アクセサリー', 'slot-accessory'),
-        ('アウター', 'slot-outer'),
-        ('トップス', 'slot-tops'),
-        ('バッグ', 'slot-bag'),
-        ('ボトムス', 'slot-bottoms'),
-        ('シューズ', 'slot-shoes'),
-    ] %}
+       近づけてサムネイルを配置する(コーデ全体を俯瞰する「フラットレイ」風のレイアウト)。
+       帽子→トップス→ボトムス→シューズは縦に隙間なく並べたいので、無いカテゴリの枠が
+       残らないよう「存在するものだけ」を出力し、行の高さはCSS側でautoにしている。 #}
+    {% macro thumb(item, slot_class) %}
+    {% if item %}
+    <div class="coordinate-thumb {{ slot_class }}">
+        {% if item.images %}
+        <img src="{{ url_for('static', filename=item.images[0].thumbnail_path) }}" alt="{{ item.name }}">
+        {% else %}
+        <span class="no-image">👕</span>
+        {% endif %}
+    </div>
+    {% endif %}
+    {% endmacro %}
     <div class="coordinate-list">
         {% for c in coordinates %}
         <div class="coordinate-card">
+            {% set items_by_category = coord_thumbs.get(c.id, {}) %}
             <div class="coordinate-thumbs">
-                {% set items_by_category = coord_thumbs.get(c.id, {}) %}
-                {% if items_by_category %}
-                {% for category, slot_class in thumb_slots %}
-                {% set item = items_by_category.get(category) %}
-                {% if item %}
-                <div class="coordinate-thumb {{ slot_class }}">
-                    {% if item.images %}
-                    <img src="{{ url_for('static', filename=item.images[0].thumbnail_path) }}" alt="{{ item.name }}">
-                    {% else %}
-                    <span class="no-image">👕</span>
-                    {% endif %}
+                {{ thumb(items_by_category.get('帽子'), 'slot-hat') }}
+                {{ thumb(items_by_category.get('サングラス'), 'slot-sunglasses') }}
+                {{ thumb(items_by_category.get('アウター'), 'slot-outer') }}
+                {{ thumb(items_by_category.get('トップス'), 'slot-tops') }}
+                {% if items_by_category.get('アクセサリー') or items_by_category.get('バッグ') %}
+                {# アクセサリーはバッグの真上に重ねたいので、右列はひとまとまりの縦積みにする #}
+                <div class="slot-side">
+                    {{ thumb(items_by_category.get('アクセサリー'), 'thumb-accessory') }}
+                    {{ thumb(items_by_category.get('バッグ'), 'thumb-bag') }}
                 </div>
                 {% endif %}
-                {% endfor %}
-                {% else %}
+                {{ thumb(items_by_category.get('ボトムス'), 'slot-bottoms') }}
+                {{ thumb(items_by_category.get('シューズ'), 'slot-shoes') }}
+                {% if not items_by_category %}
                 <div class="coordinate-thumb slot-tops"><span class="no-image">👕</span></div>
                 {% endif %}
             </div>
