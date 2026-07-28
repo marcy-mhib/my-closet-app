@@ -1420,14 +1420,25 @@ body {
     white-space: nowrap;
 }
 
+/* 押せることが分かるよう、枠線だけでなく塗りでも目立たせる */
 .mobile-chip {
-    border: 1px solid var(--thread);
     border-radius: 999px;
-    padding: 7px 12px;
+    padding: 8px 13px;
     font-size: 12px;
-    color: var(--ink-muted);
+    font-weight: 600;
     text-decoration: none;
     white-space: nowrap;
+    border: 1px solid transparent;
+}
+
+.mobile-chip-ai {
+    background: var(--ai);
+    color: var(--paper);
+}
+
+.mobile-chip-sort {
+    background: var(--rivet);
+    color: var(--paper);
 }
 
 .mobile-screen .filter-bar {
@@ -1443,7 +1454,7 @@ body {
 
 /* 服の一覧は2列。PC版より1枚が小さいので、余白と文字は詰めておく */
 .mobile-grid-2 {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
     padding: 10px;
     gap: 8px;
     overflow: visible;
@@ -1535,6 +1546,15 @@ body {
     min-height: 100dvh;  /* アドレスバーの伸縮に追従する単位。非対応ブラウザは上の100vhを使う */
 }
 
+/* 一覧ページ(fixed-screen)は画面の高さぴったりに固定する。
+   min-heightのままだと中身に合わせてbodyが伸び、中の.mobile-scrollではなく
+   ページ全体がスクロールしてしまうため、heightで頭打ちにする必要がある。 */
+.mobile-view.fixed-screen {
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+}
+
 .mobile-view .header {
     padding: 6px 12px;
     flex-shrink: 0;
@@ -1551,9 +1571,10 @@ body {
 }
 
 .mobile-view .nav a {
-    padding: 6px 11px;
-    font-size: 12px;
+    padding: 6px 9px;
+    font-size: 11px;
     font-weight: 600;
+    white-space: nowrap;  /* 「クローゼット」が2行に折り返さないようにする */
     background: var(--indigo-tint);
     border-color: var(--indigo);
     color: var(--indigo);
@@ -1569,8 +1590,17 @@ body {
 }
 
 .mobile-view .nav-logout {
-    padding: 6px 10px;
-    font-size: 12px;
+    padding: 6px 9px;
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+.mobile-view .header {
+    gap: 8px;
+}
+
+.mobile-view .logo span {
+    white-space: nowrap;
 }
 
 .mobile-screen .mobile-topbar {
@@ -1590,16 +1620,41 @@ body {
     padding: 8px 12px;
 }
 
-.mobile-screen .filter-bar input[name="q"] {
-    grid-column: 1 / 3;
-}
+/* 自動配置に任せると並びが崩れるので、1つずつ位置を指定する
+   1段目: 検索(2列ぶん) + 絞り込むボタン / 2段目: カテゴリ・季節・色 / 3段目: 条件をクリア */
+.mobile-screen .filter-bar input[name="q"] { grid-column: 1 / 3; grid-row: 1; }
+.mobile-screen .filter-bar .filter-btn { grid-column: 3; grid-row: 1; }
+.mobile-screen .filter-bar select[name="category"] { grid-column: 1; grid-row: 2; }
+.mobile-screen .filter-bar select[name="season"] { grid-column: 2; grid-row: 2; }
+.mobile-screen .filter-bar input[name="color"] { grid-column: 3; grid-row: 2; }
 
 .mobile-screen .filter-bar .filter-btn {
-    grid-column: 3;
+    min-height: 40px;
+    font-size: 14px;
+    font-weight: 600;
     padding: 0 8px;
+    white-space: nowrap;
 }
 
+/* 条件をクリアは押せると分かるようボタンの見た目にし、赤で目立たせて中央に置く */
 .mobile-screen .filter-clear {
     grid-column: 1 / -1;
-    text-align: center;
+    grid-row: 3;
+    justify-self: center;
+    min-height: 36px;
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    border: 1px solid var(--danger);
+    border-radius: 8px;
+    background: var(--danger-tint);
+    color: var(--danger);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.mobile-screen .filter-clear:hover,
+.mobile-screen .filter-clear:active {
+    background: var(--danger);
+    color: var(--paper);
 }

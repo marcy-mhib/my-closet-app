@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% block title %}クロークノート{% endblock %}
+{% block body_class %}fixed-screen{% endblock %}
 {% block content %}
 {# スマホ用のクローゼット。PC版の左右2カラムをやめ、画面いっぱいの1カラムにしている。
    上部(天気・絞り込み)は固定し、服の一覧だけがスクロールするので、
@@ -10,8 +11,8 @@
             <span class="mobile-weather-temp">{% if temp is not none %}{{ temp }}℃{% else %}--℃{% endif %}</span>
             <span class="mobile-weather-desc">{{ description }}・{{ city }}</span>
         </a>
-        <a href="/suggest" class="mobile-chip">✨ AI提案</a>
-        <a href="/rarely_worn" class="mobile-chip">📦 整理</a>
+        <a href="/suggest" class="mobile-chip mobile-chip-ai">✨ AI提案</a>
+        <a href="/rarely_worn" class="mobile-chip mobile-chip-sort">📦 整理</a>
     </div>
 
     <div class="section-header">

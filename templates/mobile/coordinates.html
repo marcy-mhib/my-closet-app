@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% block title %}コーディネート一覧{% endblock %}
+{% block body_class %}fixed-screen{% endblock %}
 {% block content %}
 {# スマホ用のコーデ一覧。見出しと絞り込みを画面上部に固定し、カードの並びだけがスクロールする。
    カードの中身はPC版と共通(_coordinate_cards.html)で、違うのは外枠と列数・サムネイルの縮尺。 #}
