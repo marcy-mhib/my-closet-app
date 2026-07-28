@@ -1245,3 +1245,78 @@ body {
         padding: 20px;
     }
 }
+
+/* --- スマホ用フォーム --- */
+/* 指でタップしやすいよう、入力欄とボタンを大きめにしたPC版との差分だけを書く。
+   input/selectの font-size は 16px 以上にしておくこと。
+   16px未満だとiOS Safariが入力欄にフォーカスした瞬間に画面を勝手に拡大してしまう。 */
+.mobile-form {
+    max-width: 560px;
+    margin: 16px auto;
+}
+
+.mobile-form .form-group {
+    margin-bottom: 22px;
+}
+
+.mobile-form label {
+    font-size: 15px;
+}
+
+.mobile-form input[type="text"],
+.mobile-form input[type="number"],
+.mobile-form select {
+    width: 100%;
+    min-height: 48px;
+    font-size: 16px;
+    padding: 10px 12px;
+}
+
+.mobile-form .season-checkbox {
+    min-height: 44px;
+    padding: 10px 14px;
+    font-size: 15px;
+}
+
+.mobile-form .submit-btn {
+    width: 100%;
+    min-height: 52px;
+    font-size: 16px;
+}
+
+.mobile-form .ai-btn {
+    min-height: 44px;
+    font-size: 15px;
+}
+
+/* 「カメラで撮影」「アルバムから選ぶ」の2つのボタン。
+   labelでinputを包んでいるので、ボタンのどこを押してもファイル選択が開く */
+.file-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.file-button {
+    flex: 1;
+    min-height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 6px;
+    border: 1px solid var(--indigo);
+    background: var(--indigo-tint);
+    color: var(--indigo);
+    border-radius: 10px;
+    font-size: 15px;
+    cursor: pointer;
+}
+
+.file-button:active {
+    background: var(--indigo);
+    color: var(--paper);
+}
+
+.file-button input {
+    display: none;
+}

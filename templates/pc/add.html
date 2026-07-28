@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+{% block title %}服を登録{% endblock %}
+{% block content %}
+<div class="form-container">
+    <h1>服を登録する</h1>
+    <form method="POST" enctype="multipart/form-data" class="validate-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="form-group">
+            <label>服の名前</label>
+            <input type="text" name="name" placeholder="例：白Tシャツ" required>
+            <span class="field-error">服の名前を入力してください</span>
+        </div>
+        <div class="form-group">
+            <label>カテゴリ</label>
+            <select name="category">
+                {% for cat in categories %}
+                <option>{{ cat }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <label>色</label>
+            <input type="text" name="color" id="color-input" placeholder="例：白、黒、ネイビー">
+        </div>
+        <div class="form-group">
+            <label>季節(複数選択可)</label>
+            <div class="season-checklist" id="season-checklist">
+                {% for s in seasons %}
+                <label class="season-checkbox">
+                    <input type="checkbox" name="season" value="{{ s }}">
+                    {{ s }}
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="form-group">
+            <label>購入価格（円・任意）</label>
+            <input type="number" name="price" min="0" step="1" placeholder="例：3000">
+        </div>
+        <div class="form-group">
+            <label>画像（複数選択可）</label>
+            <p class="field-hint">背景とアイテムの色が違う写真だと、コーデ一覧で背景を自動的に切り抜きやすくなります</p>
+            <input type="file" name="images" class="image-input" accept="image/*" multiple>
+            <div id="image-preview" class="image-preview"></div>
+            <span id="color-status" class="ai-status"></span>
+            {% if ai_enabled %}
+            <button type="button" id="ai-analyze-btn" class="ai-btn">🤖 AIで自動判定</button>
+            <span id="ai-status" class="ai-status"></span>
+            {% endif %}
+        </div>
+        <button type="submit" class="submit-btn">登録する</button>
+    </form>
+    <a href="/" class="back-link">← 戻る</a>
+</div>
+{% endblock %}
+{% block scripts %}
+{% include '_image_form_scripts.html' %}
+{% endblock %}

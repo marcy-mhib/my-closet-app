@@ -910,8 +910,9 @@ def add():
         db.session.commit()
         return redirect(url_for('index'))
 
+    # 端末に応じて pc/add.html か mobile/add.html を出し分ける(POST側の処理は共通)
     return render_template(
-        'add.html',
+        f'{get_template_folder()}/add.html',
         categories=CATEGORIES,
         seasons=SEASONS,
         ai_enabled=bool(os.getenv('ANTHROPIC_API_KEY')),

@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% block title %}服を登録{% endblock %}
+{% block content %}
+{# スマホ用の登録フォーム。PC版との違いは主に3点:
+   ・写真は「カメラで撮影」と「アルバムから選ぶ」を分けて、その場で撮る操作を1タップにしている
+   ・入力欄とボタンを大きくして、指でタップしやすくしている
+   ・項目を縦1列に並べている
+   入力欄の値の受け取り方はPC版と同じなので、/add のPOST処理は共通のまま。 #}
+<div class="form-container mobile-form">
+    <h1>服を登録する</h1>
+    <form method="POST" enctype="multipart/form-data" class="validate-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="form-group">
+            <label>写真</label>
+            <p class="field-hint">背景とアイテムの色が違う写真だと、コーデ一覧で背景を自動的に切り抜きやすくなります</p>
+            <div class="file-buttons">
+                {# capture を付けたinputはカメラが直接起動する。ただしアルバムから選べなくなる
+                   端末があるため、アルバム用のinput(captureなし)を別に用意している #}
+                <label class="file-button">
+                    📷 カメラで撮影
+                    <input type="file" name="images" class="image-input" accept="image/*" capture="environment">
+                </label>
+                <label class="file-button">
+                    🖼 アルバムから選ぶ
+                    <input type="file" name="images" class="image-input" accept="image/*" multiple>
+                </label>
+            </div>
+            <div id="image-preview" class="image-preview"></div>
+            <span id="color-status" class="ai-status"></span>
+            {% if ai_enabled %}
+            <button type="button" id="ai-analyze-btn" class="ai-btn">🤖 AIで自動判定</button>
+            <span id="ai-status" class="ai-status"></span>
+            {% endif %}
+        </div>
+
+        <div class="form-group">
+            <label>服の名前</label>
+            <input type="text" name="name" placeholder="例：白Tシャツ" required>
+            <span class="field-error">服の名前を入力してください</span>
+        </div>
+        <div class="form-group">
+            <label>カテゴリ</label>
+            <select name="category">
+                {% for cat in categories %}
+                <option>{{ cat }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <label>色</label>
+            <input type="text" name="color" id="color-input" placeholder="例：白、黒、ネイビー">
+        </div>
+        <div class="form-group">
+            <label>季節(複数選択可)</label>
+            <div class="season-checklist" id="season-checklist">
+                {% for s in seasons %}
+                <label class="season-checkbox">
+                    <input type="checkbox" name="season" value="{{ s }}">
+                    {{ s }}
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="form-group">
+            <label>購入価格（円・任意）</label>
+            <input type="number" name="price" min="0" step="1" placeholder="例：3000">
+        </div>
+
+        <button type="submit" class="submit-btn">登録する</button>
+    </form>
+    <a href="/" class="back-link">← 戻る</a>
+</div>
+{% endblock %}
+{% block scripts %}
+{% include '_image_form_scripts.html' %}
+{% endblock %}
