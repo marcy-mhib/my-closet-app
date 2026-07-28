@@ -1,0 +1,23 @@
+{# スマホ用のヘッダー。いまはPC版とまったく同じ内容にしてある。
+   Step1では入れ物だけを用意して既存の見た目を変えないのが目的で、
+   ハンバーガーメニューなどのスマホ向けの作り込みは後のStepでここに入れる。 #}
+<div class="header">
+    <div class="logo">
+        👗 <span>クロークノート</span>
+    </div>
+    <div class="nav">
+        {% if current_user.is_authenticated %}
+        <a href="/" class="{{ 'active' if request.path == '/' else '' }}">クローゼット</a>
+        <a href="/coordinates" class="{{ 'active' if request.path.startswith('/coordinates') else '' }}">コーディネート</a>
+        <a href="/weather" class="{{ 'active' if request.path == '/weather' else '' }}">天気</a>
+        <span class="nav-user">{{ current_user.username }}</span>
+        <form method="POST" action="/logout" class="inline-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="nav-logout">ログアウト</button>
+        </form>
+        {% else %}
+        <a href="/login" class="{{ 'active' if request.path == '/login' else '' }}">ログイン</a>
+        <a href="/register" class="{{ 'active' if request.path == '/register' else '' }}">新規登録</a>
+        {% endif %}
+    </div>
+</div>

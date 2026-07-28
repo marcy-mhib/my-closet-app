@@ -34,6 +34,8 @@ from sqlalchemy import text
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 
+from utils import get_template_folder
+
 # ---- 1. 初期設定 ----
 load_dotenv()  # .envファイルの中身を環境変数として読み込む
 
@@ -46,6 +48,17 @@ if not app.secret_key:
     raise RuntimeError('SECRET_KEY is not set. Please define it in the .env file.')
 
 csrf = CSRFProtect(app)  # 全POSTフォームにCSRFトークンを必須にする
+
+
+@app.context_processor
+def inject_template_folder():
+    """全テンプレートで template_folder ('pc' か 'mobile') を使えるようにする。
+
+    base.html がヘッダーを出し分けるのに使っている。ルート側を書き換えなくても
+    端末に合わせたヘッダーが読み込まれる。
+    """
+    return {'template_folder': get_template_folder()}
+
 
 db = SQLAlchemy(app)  # モデル定義・DB操作の窓口
 
