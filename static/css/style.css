@@ -1320,3 +1320,47 @@ body {
 .file-button input {
     display: none;
 }
+
+/* 編集ページの「登録済みの画像」。以前はテンプレートにインラインで書いていたぶんをここへ寄せ、
+   スマホでは指で押しやすいようにサムネイルと削除ボタンを大きくしている */
+.existing-images {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+}
+
+.existing-image {
+    position: relative;
+}
+
+.existing-image img {
+    width: 70px;
+    height: 70px;
+    border-radius: 6px;
+    object-fit: cover;
+}
+
+.existing-image .image-delete-btn {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+}
+
+.mobile-form .existing-images {
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+.mobile-form .existing-image img {
+    width: 92px;
+    height: 92px;
+}
+
+.mobile-form .existing-image .image-delete-btn {
+    width: 28px;
+    height: 28px;
+    font-size: 15px;
+    top: -8px;
+    right: -8px;
+}

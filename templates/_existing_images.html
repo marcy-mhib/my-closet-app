@@ -1,0 +1,17 @@
+{# 登録済みの画像と、その削除ボタン。PC版・スマホ版の編集ページで共通。
+   削除ボタンが指すフォームは<form>の入れ子を避けるため編集フォームの外側に置く必要があるので、
+   呼び出し側で _existing_image_delete_forms.html もあわせて読み込むこと。 #}
+<div class="existing-images">
+    {% for img in clothes.images %}
+    <div class="existing-image">
+        <img src="{{ url_for('static', filename=img.image_path) }}" alt="{{ clothes.name }}">
+        <button
+            type="submit"
+            form="delete-image-{{ img.id }}"
+            class="image-delete-btn"
+            title="この画像を削除"
+            aria-label="この画像を削除"
+        >×</button>
+    </div>
+    {% endfor %}
+</div>

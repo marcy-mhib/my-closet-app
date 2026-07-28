@@ -1,0 +1,13 @@
+{# 画像削除フォーム。<form>は入れ子にできないので編集フォームの外側に置き、
+   _existing_images.html の削除ボタンからform属性で参照させている。 #}
+{% for img in clothes.images %}
+<form
+    method="POST"
+    action="{{ url_for('delete_image', id=img.id) }}"
+    id="delete-image-{{ img.id }}"
+    onsubmit="return confirmDelete(this, 'この画像を削除しますか？')"
+    style="display:none;"
+>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+</form>
+{% endfor %}

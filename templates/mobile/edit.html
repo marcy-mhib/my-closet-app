@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+{% block title %}服を編集{% endblock %}
+{% block content %}
+{# スマホ用の編集フォーム。PC版との違いは登録ページ(mobile/add.html)と同じ考え方で、
+   写真を先頭に置き、撮影とアルバムを分け、入力欄とボタンを大きくしている。
+   POST側の処理はPC版と共通。 #}
+<div class="form-container mobile-form">
+    <h1>服を編集する</h1>
+    <form method="POST" enctype="multipart/form-data" class="validate-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="form-group">
+            <label>登録済みの画像</label>
+            {% include '_existing_images.html' %}
+            <label>写真を追加</label>
+            <p class="field-hint">背景とアイテムの色が違う写真だと、コーデ一覧で背景を自動的に切り抜きやすくなります</p>
+            <div class="file-buttons">
+                <label class="file-button">
+                    📷 カメラで撮影
+                    <input type="file" name="images" class="image-input" accept="image/*" capture="environment">
+                </label>
+                <label class="file-button">
+                    🖼 アルバムから選ぶ
+                    <input type="file" name="images" class="image-input" accept="image/*" multiple>
+                </label>
+            </div>
+            <div id="image-preview" class="image-preview"></div>
+            <span id="color-status" class="ai-status"></span>
+            {% if ai_enabled %}
+            <button type="button" id="ai-analyze-btn" class="ai-btn">🤖 AIで自動判定</button>
+            <span id="ai-status" class="ai-status"></span>
+            {% endif %}
+        </div>
+
+        <div class="form-group">
+            <label>服の名前</label>
+            <input type="text" name="name" value="{{ clothes.name }}" required>
+            <span class="field-error">服の名前を入力してください</span>
+        </div>
+        <div class="form-group">
+            <label>カテゴリ</label>
+            <select name="category">
+                {% for cat in categories %}
+                <option {% if clothes.category == cat %}selected{% endif %}>{{ cat }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <label>色</label>
+            <input type="text" name="color" id="color-input" value="{{ clothes.color }}">
+        </div>
+        <div class="form-group">
+            <label>季節(複数選択可)</label>
+            <div class="season-checklist" id="season-checklist">
+                {% set selected_seasons = (clothes.season or '').split(',') %}
+                {% for s in seasons %}
+                <label class="season-checkbox">
+                    <input type="checkbox" name="season" value="{{ s }}" {% if s in selected_seasons %}checked{% endif %}>
+                    {{ s }}
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="form-group">
+            <label>購入価格（円・任意）</label>
+            <input type="number" name="price" min="0" step="1" placeholder="例：3000" value="{{ clothes.price if clothes.price is not none else '' }}">
+        </div>
+
+        <button type="submit" class="submit-btn">保存する</button>
+    </form>
+
+    {% include '_existing_image_delete_forms.html' %}
+
+    <a href="/" class="back-link">← 戻る</a>
+</div>
+{% endblock %}
+{% block scripts %}
+{% include '_image_form_scripts.html' %}
+{% endblock %}

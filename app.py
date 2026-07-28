@@ -939,8 +939,9 @@ def edit(id):
         db.session.commit()
         return redirect(url_for('index'))
 
+    # 端末に応じて pc/edit.html か mobile/edit.html を出し分ける(POST側の処理は共通)
     return render_template(
-        'edit.html',
+        f'{get_template_folder()}/edit.html',
         clothes=clothes,
         categories=CATEGORIES,
         seasons=SEASONS,
