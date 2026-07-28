@@ -16,6 +16,9 @@
     /* 天気ページの県マップの陸地。地図らしい落ち着いた緑 */
     --map-land: #C3D3A5;
     --map-line: #5C7A46;
+    /* コーデ一覧でアイテムを並べる「地面」。切り抜きに成功した服はこの色の上に直接載るので、
+       白い服も黒い服も沈まないよう、明るすぎず暗すぎない落ち着いたセージにしている */
+    --flatlay-ground: #D9E0D4;
     --success: #3F8A5C;
     --success-tint: #E7F1EA;
     --font-display: Georgia, "Times New Roman", serif;
@@ -820,11 +823,11 @@ body {
 }
 
 /* --- Coordinates --- */
+/* align-itemsは既定のstretchのままにして、同じ行のカードの高さを揃える(がたつき防止) */
 .coordinate-list {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 14px;
-    align-items: start;
 }
 
 /* クローゼットの服カード(.clothes-card)と同じ「タグを綴じたカード」の見た目に揃える */
@@ -872,15 +875,19 @@ body {
     gap: 0;
     width: 100%;
     max-width: 250px;
+    /* 中央列を全カテゴリ並べたときの高さ(48+26+120+120+42)＋余白ぶんで固定する。
+       アイテム数の少ないコーデでも縦幅が変わらないので、一覧のカードがガタつかない。 */
+    height: 372px;
+    overflow: hidden;
     margin: 0 auto 10px;
     padding: 8px;
     border-radius: 6px;
-    background: var(--paper);
+    background: var(--flatlay-ground);
 }
 
 /* 中央の縦一列(帽子→サングラス→トップス→ボトムス→シューズ)。
-   高さを決め打ちせず画像そのものの縦横比で積むので、上下がぴったり接して隙間ができない。
-   横幅はどのアイテムも列の幅ぴったりに揃うため、同じ地面に並べたように見える。 */
+   枠の横幅はどのアイテムも列いっぱいに揃うので、同じ地面に並べたように見える。
+   高さはカテゴリごとに決め打ちして、コーデによってカードの縦幅が変わらないようにしている。 */
 .flat-center { grid-area: center; }
 .flat-outer { grid-area: outer; }
 
@@ -894,14 +901,38 @@ body {
     min-width: 0;
 }
 
-.coordinate-thumb img {
-    display: block;  /* インライン画像の下にできるすき間を消し、上下を密着させる */
-    width: 100%;
-    height: auto;
+/* 枠はどのアイテムも列の横幅いっぱい。枠の高さは画像の高さそのものなので、
+   上下に余白が入らず、帽子→トップス→ボトムス→シューズがぴったり接して並ぶ。
+   帽子のように横幅の狭いアイテムは、左右に枠の地の色(=地面)が見えることで幅が揃う。
+   max-heightは1つのアイテムが伸びすぎないための上限で、効いたときも
+   object-fit:containが横方向にだけ余らせるので、上下の隙間は生まれない。 */
+.coordinate-thumb {
+    display: flex;
+    justify-content: center;
 }
 
+.coordinate-thumb img {
+    display: block;
+    height: auto;
+    object-fit: contain;
+}
+
+.slot-tops img,
+.slot-bottoms img,
+.slot-outer img {
+    width: 100%;
+    max-height: 120px;
+}
+
+/* 帽子・サングラス・シューズ・小物は実物の大きさに近づけて小さめに置く */
+.slot-hat img { width: 44%; max-height: 48px; }
+.slot-sunglasses img { width: 30%; max-height: 26px; }
+.slot-shoes img { width: 58%; max-height: 42px; }
+.slot-accessory img { width: 58%; max-height: 34px; }
+.slot-bag img { width: 100%; max-height: 62px; }
+
 .coordinate-thumb .no-image {
-    height: 60px;
+    height: 80px;
     align-items: center;
 }
 

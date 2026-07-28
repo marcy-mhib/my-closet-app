@@ -279,19 +279,38 @@ def run_migrations():
         conn.commit()
 
 
-def backfill_thumbnails():
-    """thumb_pathがまだ無い画像に、余白を落としたサムネイルをまとめて作る。
+# サムネイルの作り方を変えたらこの番号を上げる。ファイル名に埋め込んでいるので、
+# 番号が違う=古い作り方のサムネイルとみなして起動時に自動で作り直される。
+THUMB_VERSION = 2
 
-    サムネイル導入より前に登録された画像を追いつかせるための処理で、
-    一度作れば以降はスキップされる(作れなかった画像は元画像のまま表示される)。
+
+def thumbnail_filename():
+    return f'{uuid.uuid4().hex}_thumb{THUMB_VERSION}.png'
+
+
+def needs_thumbnail(record):
+    """サムネイルが無いか、古い作り方のままなら作り直しが必要。"""
+    return not record.thumb_path or f'_thumb{THUMB_VERSION}.' not in record.thumb_path
+
+
+def backfill_thumbnails():
+    """サムネイルが無い画像・古い作り方の画像に、今の方式のサムネイルをまとめて作る。
+
+    既存の登録画像を今の表示方式に追いつかせるための処理で、
+    作り終われば以降はスキップされる(作れなかった画像は元画像のまま表示される)。
     """
-    pending = ClothesImage.query.filter(ClothesImage.thumb_path.is_(None)).all()
+    pending = [record for record in ClothesImage.query.all() if needs_thumbnail(record)]
     for record in pending:
         source = os.path.join(app.root_path, 'static', record.cutout_path or record.image_path)
-        thumb_name = f'{uuid.uuid4().hex}_thumb.png'
-        if os.path.exists(source) and build_flat_thumbnail(
+        thumb_name = thumbnail_filename()
+        if not os.path.exists(source) or not build_flat_thumbnail(
                 source, os.path.join(app.config['UPLOAD_FOLDER'], thumb_name)):
-            record.thumb_path = f'uploads/{thumb_name}'
+            continue
+        if record.thumb_path:  # 作り直せたら古いファイルは残さない
+            outdated = os.path.join(app.root_path, 'static', record.thumb_path)
+            if os.path.exists(outdated):
+                os.remove(outdated)
+        record.thumb_path = f'uploads/{thumb_name}'
     if pending:
         db.session.commit()
 
@@ -332,7 +351,7 @@ def save_clothes_image(image, clothes_id):
     # コーデ一覧用に、アイテムの周りの余白を落としたサムネイルも作っておく。
     # 切り抜きに成功していればそれを、失敗していれば元画像を切り出しの元にする。
     thumb_path = None
-    thumb_name = f'{uuid.uuid4().hex}_thumb.png'
+    thumb_name = thumbnail_filename()
     thumb_source = os.path.join(app.config['UPLOAD_FOLDER'], cutout_name) if cutout_path else image_path_abs
     if build_flat_thumbnail(thumb_source, os.path.join(app.config['UPLOAD_FOLDER'], thumb_name)):
         thumb_path = f'uploads/{thumb_name}'
@@ -358,6 +377,7 @@ def build_flat_thumbnail(source_path_abs, out_path_abs):
     """
     try:
         image = Image.open(source_path_abs)
+        background = None
         if image.mode in ('RGBA', 'LA'):
             image = image.convert('RGBA')
             box = image.getchannel('A').getbbox()  # 完全に透明な縁を落とす
@@ -389,6 +409,9 @@ def build_flat_thumbnail(source_path_abs, out_path_abs):
         if right - left < image.width * 0.1 or bottom - top < image.height * 0.1:
             left, top, right, bottom = 0, 0, image.width, image.height
 
+        # 余白は足さずアイテムぴったりで切り出す。コーデ一覧では上下に隙間なく積みたいので、
+        # 画像に縦の余白があるとそのままアイテム同士の隙間になってしまう。
+        # 横幅の差(トップスと帽子など)は、表示側で枠の背景色が見えることで埋まる。
         thumbnail = image.crop((left, top, right, bottom))
         thumbnail.thumbnail((THUMB_MAX_SIZE, THUMB_MAX_SIZE), Image.LANCZOS)
         thumbnail.save(out_path_abs, 'PNG')
