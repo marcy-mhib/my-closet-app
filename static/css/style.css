@@ -1484,8 +1484,16 @@ body {
     margin-bottom: 4px;
 }
 
+/* 「今日着た」だけになったので、左寄せ(space-between)をやめて中央に置く。
+   .inline-formはinline-flex=中身の幅しかないため、flex:1で行いっぱいに広げてから
+   ボタンをその幅いっぱいにする(ボタンの文字は自動的に中央になる) */
 .mobile-grid-2 .wear-row {
+    justify-content: center;
     align-items: stretch;
+}
+
+.mobile-grid-2 .wear-row .inline-form {
+    flex: 1;
 }
 
 .mobile-grid-2 .wear-btn {
