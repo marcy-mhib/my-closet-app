@@ -237,18 +237,15 @@ class ClothesImage(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     clothes_id = db.Column(db.Integer, db.ForeignKey('clothes.id'), nullable=False)
     image_path = db.Column(db.String(200), nullable=False)
-    # 背景を透過した切り抜き画像。無地の背景でないなど生成に失敗した場合はNoneのまま
+    # 背景を透過した切り抜き画像。現在は生成しておらず、過去に作った分だけが残っている
     cutout_path = db.Column(db.String(200))
     # アイテムの周りの余白を切り落としたサムネイル。コーデ一覧で縦に隙間なく積むために使う
     thumb_path = db.Column(db.String(200))
 
     @property
     def thumbnail_path(self):
-        """コーデ一覧など背景を揃えて見せたい場面で使う画像パス。
-
-        余白を落としたサムネイル → 切り抜き → 元画像 の順に、あるものを使う。
-        """
-        return self.thumb_path or self.cutout_path or self.image_path
+        """コーデ一覧で使う画像パス(余白を落としたサムネイル。作れていなければ元画像)。"""
+        return self.thumb_path or self.image_path
 
 
 class Coordinate(db.Model):
@@ -297,7 +294,8 @@ def run_migrations():
 
 # サムネイルの作り方を変えたらこの番号を上げる。ファイル名に埋め込んでいるので、
 # 番号が違う=古い作り方のサムネイルとみなして起動時に自動で作り直される。
-THUMB_VERSION = 2
+# 3: 切り抜き画像ではなく元写真から作るようにした(背景ごと表示する方針に変更したため)
+THUMB_VERSION = 3
 
 
 def thumbnail_filename():
@@ -317,7 +315,7 @@ def backfill_thumbnails():
     """
     pending = [record for record in ClothesImage.query.all() if needs_thumbnail(record)]
     for record in pending:
-        source = os.path.join(app.root_path, 'static', record.cutout_path or record.image_path)
+        source = os.path.join(app.root_path, 'static', record.image_path)
         thumb_name = thumbnail_filename()
         if not os.path.exists(source) or not build_flat_thumbnail(
                 source, os.path.join(app.config['UPLOAD_FOLDER'], thumb_name)):
@@ -357,24 +355,16 @@ def save_clothes_image(image, clothes_id):
     image_path_abs = os.path.join(app.config['UPLOAD_FOLDER'], unique_name)
     image.save(image_path_abs)
 
-    cutout_path = None
-    with open(image_path_abs, 'rb') as f:
-        image_bytes = f.read()
-    cutout_name = f'{uuid.uuid4().hex}_cut.png'
-    if generate_cutout(image_bytes, os.path.join(app.config['UPLOAD_FOLDER'], cutout_name)):
-        cutout_path = f'uploads/{cutout_name}'
-
-    # コーデ一覧用に、アイテムの周りの余白を落としたサムネイルも作っておく。
-    # 切り抜きに成功していればそれを、失敗していれば元画像を切り出しの元にする。
+    # コーデ一覧用に、アイテムの周りの余白を落としたサムネイルを作っておく。
+    # 背景の切り抜き(generate_cutout)は、うまく抜ける写真と抜けない写真が混ざって
+    # 一覧の見た目がそろわないため使っていない。写真は背景ごとそのまま表示する。
     thumb_path = None
     thumb_name = thumbnail_filename()
-    thumb_source = os.path.join(app.config['UPLOAD_FOLDER'], cutout_name) if cutout_path else image_path_abs
-    if build_flat_thumbnail(thumb_source, os.path.join(app.config['UPLOAD_FOLDER'], thumb_name)):
+    if build_flat_thumbnail(image_path_abs, os.path.join(app.config['UPLOAD_FOLDER'], thumb_name)):
         thumb_path = f'uploads/{thumb_name}'
 
     return ClothesImage(
-        clothes_id=clothes_id, image_path=f'uploads/{unique_name}',
-        cutout_path=cutout_path, thumb_path=thumb_path,
+        clothes_id=clothes_id, image_path=f'uploads/{unique_name}', thumb_path=thumb_path,
     )
 
 
@@ -444,6 +434,10 @@ CUTOUT_ANALYSIS_SIZE = 240  # 判定用に縮小する一辺の最大px数(処�
 
 def generate_cutout(image_bytes, out_path_abs):
     """写真の外周と同じ色が連結している領域(=背景)を透過にしたPNGを保存する。
+
+    現在この関数は呼び出していない。写真によって綺麗に抜ける・抜けないが分かれ、
+    コーデ一覧に切り抜き済みと切り抜き無しが混在して見た目がそろわなかったため、
+    背景ごと表示する方針に変えた。再び切り抜きたくなったときのために残してある。
     外周から塗りつぶし(flood fill)で辿れる範囲だけを背景とみなすため、
     アイテム内部に背景と似た色があっても(白いスニーカーなど)誤って消えることはない。
     柄物など背景が単色でない写真では綺麗に抜けないことがあり、その場合はFalseを返す。
