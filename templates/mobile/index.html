@@ -63,7 +63,7 @@
                         {% endif %}
                     </div>
                     {% if item.id in recommended_ids %}
-                    <span class="recommend-badge">🌡️</span>
+                    <span class="recommend-badge">🌡️ 今日にぴったり</span>
                     {% endif %}
                     <div class="clothes-name">
                         {{ item.name }}
@@ -91,7 +91,6 @@
                             <button type="submit" class="wear-btn">今日着た</button>
                         </form>
                         {% endif %}
-                        <span class="wear-info">{{ item.wear_count }}回</span>
                     </div>
                 </div>
                 {% endfor %}

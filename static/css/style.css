@@ -1485,9 +1485,7 @@ body {
 }
 
 .mobile-grid-2 .wear-row {
-    flex-direction: column;
     align-items: stretch;
-    gap: 3px;
 }
 
 .mobile-grid-2 .wear-btn {
@@ -1496,14 +1494,14 @@ body {
     padding: 5px 0;
 }
 
-.mobile-grid-2 .wear-info {
-    font-size: 10px;
-    text-align: center;
-}
-
+/* 2列だと幅が狭いので、行を占有させて文言が省略されないようにする */
 .mobile-grid-2 .recommend-badge {
-    font-size: 11px;
-    padding: 1px 4px;
+    display: block;
+    width: 100%;
+    text-align: center;
+    font-size: 10px;
+    padding: 3px 4px;
+    margin-bottom: 5px;
 }
 
 /* コーデ一覧は2列。フラットレイは--flat-scaleでまとめて縮める */
@@ -1760,6 +1758,9 @@ body {
     flex: 1;
     min-height: 0;
     overflow-y: auto;
+    /* カード左上のリベットは枠の外(top:-6px)にはみ出す作りなので、
+       上下に余白を取っておかないとスクロール枠の縁で半分に切れてしまう */
+    padding: 8px 2px 2px;
 }
 
 .pc-view.fixed-screen {
