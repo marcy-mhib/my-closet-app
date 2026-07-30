@@ -9,8 +9,14 @@
     <div class="mobile-topbar">
         <a href="/weather" class="mobile-weather">
             <span class="mobile-weather-temp">{% if temp is not none %}{{ temp }}℃{% else %}--℃{% endif %}</span>
-            <span class="mobile-weather-desc">{{ description }}・{{ city }}</span>
+            <span class="mobile-weather-desc">{{ description }}</span>
         </a>
+        {# 天気ページへ行かなくても、ここで表示する都市を変えられるようにしておく #}
+        <form method="POST" action="/city" class="mobile-city-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="text" name="city" value="{{ city }}" aria-label="天気を表示する都市">
+            <button type="submit">変更</button>
+        </form>
         <a href="/suggest" class="mobile-chip mobile-chip-ai">✨ AI提案</a>
         <a href="/rarely_worn" class="mobile-chip mobile-chip-sort">📦 整理</a>
     </div>

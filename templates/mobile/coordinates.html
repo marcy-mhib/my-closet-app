@@ -39,4 +39,45 @@
         {% include '_coordinate_cards.html' %}
     </div>
 </div>
+
+{# サムネイルをタップしたときに、そのコーデを画面いっぱいに拡大して見せるための入れ物 #}
+<div id="coordinate-zoom" class="coordinate-zoom">
+    <div class="coordinate-zoom-inner"></div>
+    <button type="button" class="coordinate-zoom-close" aria-label="閉じる">×</button>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const zoom = document.getElementById('coordinate-zoom');
+    const inner = zoom.querySelector('.coordinate-zoom-inner');
+
+    function close() {
+        zoom.classList.remove('open');
+        inner.innerHTML = '';
+    }
+
+    document.querySelectorAll('.coordinate-card').forEach(function (card) {
+        const thumbs = card.querySelector('.coordinate-thumbs');
+        if (!thumbs) return;
+        thumbs.addEventListener('click', function () {
+            // 一覧では縮めて表示しているので、複製したものを等倍に戻して拡大表示する
+            inner.innerHTML = '';
+            const name = card.querySelector('.coordinate-name');
+            if (name) {
+                const title = document.createElement('div');
+                title.className = 'coordinate-zoom-name';
+                title.textContent = name.textContent;
+                inner.appendChild(title);
+            }
+            inner.appendChild(thumbs.cloneNode(true));
+            zoom.classList.add('open');
+        });
+    });
+
+    zoom.addEventListener('click', function (e) {
+        if (e.target === zoom || e.target.classList.contains('coordinate-zoom-close')) close();
+    });
+});
+</script>
 {% endblock %}

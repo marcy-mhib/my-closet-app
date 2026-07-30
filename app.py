@@ -134,8 +134,11 @@ for _pref in PREFECTURE_DATA.values():
 
 # 県内マップのカードが重ならないよう押し広げるときに使う、見た目のサイズの目安(px)。
 # style.css の .pref-city の大きさ・.pref-map-inner の --map-height と揃えておくこと。
-MAP_CARD_WIDTH, MAP_CARD_HEIGHT = 74, 60
-MAP_MAX_WIDTH, MAP_MAX_HEIGHT = 452, 400
+# スマホは地図もカードも小さいので、別の値を使わないとカードが重なってしまう。
+MAP_SIZES = {
+    'pc': {'card_w': 74, 'card_h': 60, 'max_w': 452, 'max_h': 400},
+    'mobile': {'card_w': 62, 'card_h': 50, 'max_w': 300, 'max_h': 330},
+}
 
 
 def build_prefecture_shape(outline):
@@ -650,15 +653,17 @@ def resolve_prefecture_key(city):
     return None
 
 
-def spread_out_cards(spots, aspect):
+def spread_out_cards(spots, aspect, device='pc'):
     """気温カードが重なっている分だけ、少しずつ押し広げて読めるようにする。
 
     緯度経度どおりの位置を出発点にして、重なっているペアだけを「ずれが小さくて済むほうの軸」に
     動かすので、県内での位置関係(どちらが北か・東か)は保たれる。
+    どれくらい離せば重ならないかは画面の大きさで変わるので、端末ごとの目安値を使う。
     """
-    width = min(MAP_MAX_WIDTH, MAP_MAX_HEIGHT * aspect)  # 実際に表示される地図の大きさ(px)
-    min_dx = MAP_CARD_WIDTH / width * 100
-    min_dy = MAP_CARD_HEIGHT / (width / aspect) * 100
+    size = MAP_SIZES.get(device, MAP_SIZES['pc'])
+    width = min(size['max_w'], size['max_h'] * aspect)  # 実際に表示される地図の大きさ(px)
+    min_dx = size['card_w'] / width * 100
+    min_dy = size['card_h'] / (width / aspect) * 100
     for _ in range(200):
         overlapped = False
         for a, b in combinations(spots, 2):
@@ -1068,7 +1073,8 @@ def new_coordinate():
         .order_by(Clothes.category, Clothes.name)
         .all()
     )
-    return render_template('coordinate_new.html', clothes=clothes, selected_ids=set())
+    return render_template(
+        f'{get_template_folder()}/coordinate_new.html', clothes=clothes, selected_ids=set())
 
 
 @app.route('/coordinates/<int:id>/edit', methods=['GET', 'POST'])
@@ -1231,6 +1237,7 @@ def weather():
     city = current_user.city or DEFAULT_CITY
     temp, description = fetch_weather(city)
 
+    device = get_template_folder()
     prefecture_key = resolve_prefecture_key(city)
     city_weather = []
     prefecture_shape = None
@@ -1249,7 +1256,7 @@ def weather():
                 'top': (lat_max - item['lat']) / lat_span * 100,  # 緯度が高い(北)ほど上
                 'temp': city_temp, 'description': city_description,
             })
-        spread_out_cards(city_weather, float(prefecture_shape['aspect']))
+        spread_out_cards(city_weather, float(prefecture_shape['aspect']), device)
 
     return render_template(
         'weather.html', temp=temp, description=description, city=city,

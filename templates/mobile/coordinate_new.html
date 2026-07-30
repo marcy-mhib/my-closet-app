@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% block title %}コーデを作成{% endblock %}
+{% block body_class %}fixed-screen{% endblock %}
+{% block content %}
+{# スマホ用のコーデ作成。コーデ名と「選んだアイテム」を画面上部に固定し、
+   アイテムの一覧だけがスクロールする。選んだものが常に見えるので、
+   下までスクロールしても何を選んだか確認しに戻る必要がない。 #}
+<div class="mobile-screen mobile-picker">
+    <form method="POST" class="validate-form mobile-picker-form" id="coordinate-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="mobile-picker-head">
+            <div class="form-group">
+                <label>コーデ名</label>
+                <input type="text" name="name" placeholder="例：休日カジュアル" required>
+                <span class="field-error">コーデ名を入力してください</span>
+            </div>
+            <div class="selected-strip" id="selected-preview">
+                <span class="selected-empty" id="selected-empty">下から服を選んでください</span>
+            </div>
+        </div>
+
+        {# ここだけがスクロールする領域 #}
+        <div class="mobile-scroll">
+            {% include '_clothes_picker.html' %}
+        </div>
+
+        <div class="mobile-picker-actions">
+            <a href="/coordinates" class="back-link">← 戻る</a>
+            <button type="submit" class="submit-btn">保存する</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+{% block scripts %}
+{% include '_picker_scripts.html' %}
+{% endblock %}

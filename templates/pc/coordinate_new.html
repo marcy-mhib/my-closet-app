@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% block title %}コーデを作成{% endblock %}
+{% block content %}
+<div class="main">
+    <div class="left">
+        <div class="section-header">
+            <span class="section-title">コーディネートを作成する</span>
+        </div>
+        <form method="POST" class="validate-form picker-form" id="coordinate-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="form-group" style="padding: 16px 20px 0;">
+                <label>コーデ名</label>
+                <input type="text" name="name" placeholder="例：休日カジュアル" required>
+                <span class="field-error">コーデ名を入力してください</span>
+            </div>
+
+            {% include '_clothes_picker.html' %}
+        </form>
+    </div>
+
+    <div class="right">
+        <div style="padding: 16px 20px 0;">
+            <div class="suggest-label">選んだアイテム</div>
+        </div>
+        <div id="selected-preview" class="selected-preview">
+            <div class="empty-state" id="selected-empty">まだ何も選んでいません</div>
+        </div>
+        <div class="coordinate-edit-actions">
+            <button type="submit" form="coordinate-form" class="submit-btn small-btn">保存する</button>
+            <a href="/coordinates" class="back-link">← 戻る</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+{% include '_picker_scripts.html' %}
+{% endblock %}
