@@ -4,14 +4,14 @@
 {% block content %}
 {# 見出しと絞り込みは上部に固定し、カードの並びだけをスクロールさせる #}
 <div class="form-container scroll-container" style="max-width:700px;">
-    <div class="section-header" style="padding:0 0 16px; border-bottom:none;">
+    <div class="section-header" style="padding:0 0 10px; border-bottom:none;">
         <h1 style="font-size:18px; font-weight:500; margin:0;">コーディネート一覧</h1>
         <div class="header-actions">
             <a href="/coordinates/new" class="add-btn">＋ コーデを作成</a>
             <a href="/" class="header-back-btn">← 戻る</a>
         </div>
     </div>
-    <form method="GET" action="/coordinates" class="filter-bar" style="padding:0 0 16px; border-bottom:none;">
+    <form method="GET" action="/coordinates" class="filter-bar" style="padding:0 0 10px; border-bottom:none;">
         <input type="text" name="q" placeholder="コーデ名・アイテム名で検索" value="{{ filters.q }}">
         <select name="category">
             <option value="">すべてのカテゴリ</option>

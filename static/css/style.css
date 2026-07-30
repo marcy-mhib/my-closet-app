@@ -1620,6 +1620,14 @@ body {
     padding: 8px 12px;
 }
 
+/* グリッドの子は既定の min-width:auto だと「inputの既定幅」を最小幅として主張するため、
+   3列が画面幅に収まらず右端(絞り込むボタン・色)がはみ出して切れてしまう。
+   min-width:0 にして、列幅どおりに縮められるようにする。 */
+.mobile-screen .filter-bar > * {
+    min-width: 0;
+    width: 100%;
+}
+
 /* 自動配置に任せると並びが崩れるので、1つずつ位置を指定する
    1段目: 検索(2列ぶん) + 絞り込むボタン / 2段目: カテゴリ・季節・色 / 3段目: 条件をクリア */
 .mobile-screen .filter-bar input[name="q"] { grid-column: 1 / 3; grid-row: 1; }
@@ -1719,11 +1727,28 @@ body {
 }
 
 /* --- 上部固定＋中だけスクロールする枠(PCのコーデ一覧で使う) --- */
+/* 上部を固定して中だけスクロールさせる枠。
+   カード1枚がそれなりに高いので、外側の余白を削って
+   スクロール領域(.scroll-area)に画面の高さをできるだけ回す。
+   89px = ヘッダー57px + 上下マージン32px */
 .scroll-container {
     display: flex;
     flex-direction: column;
-    max-height: calc(100vh - 130px);
+    height: calc(100vh - 89px);
+    margin: 16px auto;
+    padding: 16px 20px;
     overflow: hidden;
+}
+
+.scroll-container > .section-header,
+.scroll-container > .filter-bar {
+    padding: 0 0 10px;
+    border-bottom: none;
+}
+
+/* 一覧では枚数を見渡せることを優先して、フラットレイを少しだけ縮める */
+.scroll-area .coordinate-thumbs {
+    --flat-scale: 0.85;
 }
 
 .scroll-container > .section-header,
