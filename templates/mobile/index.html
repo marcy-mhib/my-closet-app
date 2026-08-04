@@ -92,6 +92,16 @@
                         </form>
                         {% endif %}
                     </div>
+                    {# 幅が狭いので、購入価格は出さず「1回あたりいくらか」だけを表示する #}
+                    {% if item.price %}
+                    <div class="cost-info">
+                        {% if item.wear_count > 0 %}
+                        着用あたり ¥{{ '{:,}'.format((item.price / item.wear_count) | round | int) }}
+                        {% else %}
+                        ¥{{ '{:,}'.format(item.price) }}・未着用
+                        {% endif %}
+                    </div>
+                    {% endif %}
                 </div>
                 {% endfor %}
             {% else %}
