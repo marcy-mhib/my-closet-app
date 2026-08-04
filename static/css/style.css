@@ -876,11 +876,11 @@ body {
     gap: 0;
     width: 100%;
     max-width: 310px;
-    /* 中央列を全カテゴリ並べたときの高さ(48+26+170+170+70)＋余白ぶんで固定する。
+    /* 中央列を全カテゴリ並べたときの高さ(48+26+170+170+84)＋余白ぶんで固定する。
        アイテム数の少ないコーデでも縦幅が変わらないので、一覧のカードがガタつかない。
        --flat-scale を変えると全体が同じ比率で縮む(スマホ版で小さくするために使う)。 */
     --flat-scale: 1;
-    height: calc(500px * var(--flat-scale));
+    height: calc(514px * var(--flat-scale));
     overflow: hidden;
     margin: 0 auto 10px;
     padding: 8px;
@@ -930,7 +930,7 @@ body {
 /* 帽子・サングラス・シューズ・小物は実物の大きさに近づけて小さめに置く */
 .slot-hat img { width: 44%; max-height: calc(48px * var(--flat-scale)); }
 .slot-sunglasses img { width: 30%; max-height: calc(26px * var(--flat-scale)); }
-.slot-shoes img { width: 72%; max-height: calc(70px * var(--flat-scale)); }
+.slot-shoes img { width: 86%; max-height: calc(84px * var(--flat-scale)); }
 .slot-accessory img { width: 78%; max-height: calc(46px * var(--flat-scale)); }
 .slot-bag img { width: 100%; max-height: calc(80px * var(--flat-scale)); }
 
@@ -1292,8 +1292,10 @@ body {
     font-size: 15px;
 }
 
-/* 画像選択ボタン。labelでinputを包んでいるので、ボタンのどこを押しても選択画面が開く */
-.file-button {
+/* 画像選択ボタン。labelでinputを包んでいるので、ボタンのどこを押しても選択画面が開く。
+   .form-group label の display:block に負けてflexが無効化されないよう、
+   セレクタを .mobile-form 付きにして詳細度を上げている(上下中央寄せに必要)。 */
+.mobile-form .file-button {
     width: 100%;
     min-height: 60px;
     display: flex;
@@ -1309,12 +1311,12 @@ body {
     cursor: pointer;
 }
 
-.file-button:active {
+.mobile-form .file-button:active {
     background: var(--indigo);
     color: var(--paper);
 }
 
-.file-button input {
+.mobile-form .file-button input {
     display: none;
 }
 
@@ -1571,8 +1573,8 @@ body {
 }
 
 .mobile-view .logo {
-    font-size: 15px;
-    gap: 5px;
+    font-size: 14px;
+    gap: 4px;
 }
 
 /* 現在地が一目で分かるよう、スマホでは枠線だけでなく塗りでも区別する */
@@ -1581,7 +1583,7 @@ body {
 }
 
 .mobile-view .nav a {
-    padding: 6px 9px;
+    padding: 6px 8px;
     font-size: 11px;
     font-weight: 600;
     white-space: nowrap;  /* 「クローゼット」が2行に折り返さないようにする */
@@ -1600,7 +1602,7 @@ body {
 }
 
 .mobile-view .nav-logout {
-    padding: 6px 9px;
+    padding: 6px 8px;
     font-size: 11px;
     white-space: nowrap;
 }
