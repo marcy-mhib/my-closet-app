@@ -869,17 +869,18 @@ body {
    その行がまるごと潰れ、帽子とトップスがそのまま隣接する(縦方向に余白が残らない)。 */
 .coordinate-thumbs {
     display: grid;
-    grid-template-columns: 1fr 1.5fr 1fr;
+    /* 中央列の取り分を減らし、左右のアウター・バッグ・アクセサリーを大きく見せる */
+    grid-template-columns: 1fr 1.35fr 1fr;
     grid-template-areas: "outer center side";
     align-items: center;
     gap: 0;
     width: 100%;
-    max-width: 250px;
-    /* 中央列を全カテゴリ並べたときの高さ(48+26+120+120+42)＋余白ぶんで固定する。
+    max-width: 310px;
+    /* 中央列を全カテゴリ並べたときの高さ(48+26+170+170+70)＋余白ぶんで固定する。
        アイテム数の少ないコーデでも縦幅が変わらないので、一覧のカードがガタつかない。
        --flat-scale を変えると全体が同じ比率で縮む(スマホ版で小さくするために使う)。 */
     --flat-scale: 1;
-    height: calc(372px * var(--flat-scale));
+    height: calc(500px * var(--flat-scale));
     overflow: hidden;
     margin: 0 auto 10px;
     padding: 8px;
@@ -923,15 +924,15 @@ body {
 .slot-bottoms img,
 .slot-outer img {
     width: 100%;
-    max-height: calc(120px * var(--flat-scale));
+    max-height: calc(170px * var(--flat-scale));
 }
 
 /* 帽子・サングラス・シューズ・小物は実物の大きさに近づけて小さめに置く */
 .slot-hat img { width: 44%; max-height: calc(48px * var(--flat-scale)); }
 .slot-sunglasses img { width: 30%; max-height: calc(26px * var(--flat-scale)); }
-.slot-shoes img { width: 58%; max-height: calc(42px * var(--flat-scale)); }
-.slot-accessory img { width: 58%; max-height: calc(34px * var(--flat-scale)); }
-.slot-bag img { width: 100%; max-height: calc(62px * var(--flat-scale)); }
+.slot-shoes img { width: 72%; max-height: calc(70px * var(--flat-scale)); }
+.slot-accessory img { width: 78%; max-height: calc(46px * var(--flat-scale)); }
+.slot-bag img { width: 100%; max-height: calc(80px * var(--flat-scale)); }
 
 .coordinate-thumb .no-image {
     height: 80px;
@@ -1515,18 +1516,21 @@ body {
 /* コーデ一覧は2列。フラットレイは--flat-scaleでまとめて縮める */
 .mobile-coordinates .coordinate-list {
     grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    padding: 10px;
+    gap: 8px;
+    padding: 8px;
 }
 
+/* スマホは2列ぶんのカード幅が上限なので、アイテムは横幅いっぱいまで広がりきっている。
+   縮尺は「中身の高さとほぼ同じ」に合わせて、カード内の空きスペースを減らす
+   (空きが多いとアイテムが小さく見えるため)。もっと大きく見たいときはタップで拡大できる。 */
 .mobile-coordinates .coordinate-thumbs {
-    --flat-scale: 0.55;
+    --flat-scale: 0.42;
     max-width: 100%;
-    padding: 5px;
+    padding: 4px;
 }
 
 .mobile-coordinates .coordinate-card {
-    padding: 10px;
+    padding: 8px;
 }
 
 .mobile-coordinates .coordinate-card::before {
@@ -1683,9 +1687,16 @@ body {
 /* --- ヘッダーの折り返し防止 --- */
 /* ログアウトが「ログアウ」で切れていたのは、ナビが縮められていたため。
    縮むのは長いロゴ側にして、ボタン類は縮ませない。 */
+/* ロゴは縮めない。横幅が足りないぶんはナビ側の文言を短くして吸収する
+   (以前はここでoverflow:hiddenにしていたため「クロークノ」で切れていた) */
 .mobile-view .logo {
-    min-width: 0;
-    overflow: hidden;
+    flex-shrink: 0;
+}
+
+/* 万一それでも入りきらない端末では、切るのではなく折り返す */
+.mobile-view .header {
+    flex-wrap: wrap;
+    row-gap: 6px;
 }
 
 .mobile-view .nav {
